@@ -821,7 +821,9 @@ class LocalUserStore {
             localStorage.setItem(noiseSuppressionProviderKey, "workadventure");
             return false;
         }
-        return localStorage.getItem(noiseSuppressionEnabledKey) === "true";
+        // Default to enabled: only an explicit opt-out ("false") turns noise suppression off,
+        // mirroring getMicrophoneBrowserNoiseSuppression() below.
+        return localStorage.getItem(noiseSuppressionEnabledKey) !== "false";
     }
 
     setNoiseSuppressionProvider(value: NoiseSuppressionProvider) {
