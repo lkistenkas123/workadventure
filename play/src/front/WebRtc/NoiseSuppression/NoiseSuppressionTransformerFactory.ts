@@ -8,8 +8,8 @@ import type {
 } from "./NoiseSuppressionTransformerTypes";
 
 /**
- * Returns the transformer for the engine selected by `VITE_NOISE_SUPPRESSION_ENGINE`
- * (DeepFilterNet3 by default, the legacy DTLN worklet when set to "dtln").
+ * Returns the transformer for the selected engine: DTLN by default, DeepFilterNet3 when
+ * `VITE_NOISE_SUPPRESSION_ENGINE` or the localStorage override asks for it.
  */
 export function createNoiseSuppressionTransformer(
     options?: NoiseSuppressionTransformerOptions,

@@ -1,9 +1,9 @@
 /**
  * Central configuration for the local microphone noise suppression engine.
  *
- * Two engines are shipped side by side so that it is possible to switch back at build time:
- *  - "deepfilternet3" (default): DeepFilterNet3 via the `deepfilternet3-noise-filter` package.
- *  - "dtln" (legacy): the previous `@workadventure/noise-suppression` DTLN audio worklet.
+ * Two engines are shipped side by side and can be swapped at build time or at runtime:
+ *  - "dtln" (default): the `@workadventure/noise-suppression` DTLN audio worklet.
+ *  - "deepfilternet3": DeepFilterNet3 via the `deepfilternet3-noise-filter` package.
  *
  * Nothing else in the codebase needs to know which engine is active: the transformer factory in
  * `NoiseSuppressionTransformerFactory.ts` exposes the very same API for both.
@@ -18,13 +18,23 @@ export type NoiseSuppressionEngine = "deepfilternet3" | "dtln";
 const viteEnv: Record<string, string | undefined> =
     typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
 
-const DEFAULT_ENGINE: NoiseSuppressionEngine = "deepfilternet3";
+/**
+ * DTLN is the default. DeepFilterNet3 was trialled as a replacement and rejected: with the engine
+ * bypassed the same audio chain sounds fine, so the microphone and the 48 kHz graph are not at
+ * fault, but with it active speech comes out muffled and partly suppressed along with the noise,
+ * at every attenuation limit that was tried. It stays available behind the flag below for a
+ * retry with a future model revision.
+ */
+const DEFAULT_ENGINE: NoiseSuppressionEngine = "dtln";
+
+function parseEngine(value: string | null | undefined): NoiseSuppressionEngine | undefined {
+    return value === "dtln" || value === "deepfilternet3" ? value : undefined;
+}
 
 /**
- * Build-time feature flag: set `VITE_NOISE_SUPPRESSION_ENGINE=dtln` to ship the legacy DTLN worklet.
+ * Build-time feature flag: set `VITE_NOISE_SUPPRESSION_ENGINE=deepfilternet3` to ship DeepFilterNet3.
  */
-const ENGINE_FROM_ENV: NoiseSuppressionEngine =
-    viteEnv.VITE_NOISE_SUPPRESSION_ENGINE === "dtln" ? "dtln" : DEFAULT_ENGINE;
+const ENGINE_FROM_ENV: NoiseSuppressionEngine = parseEngine(viteEnv.VITE_NOISE_SUPPRESSION_ENGINE) ?? DEFAULT_ENGINE;
 
 /**
  * Runtime override, so both engines can be A/B tested without a rebuild. Both are bundled anyway;
@@ -34,14 +44,11 @@ const ENGINE_OVERRIDE_KEY = "noiseSuppressionEngine";
 
 function readEngineOverride(): NoiseSuppressionEngine | undefined {
     try {
-        const stored = localStorage.getItem(ENGINE_OVERRIDE_KEY);
-        if (stored === "dtln" || stored === "deepfilternet3") {
-            return stored;
-        }
+        return parseEngine(localStorage.getItem(ENGINE_OVERRIDE_KEY));
     } catch {
         // localStorage can be unavailable (private mode, blocked site data); use the build flag.
+        return undefined;
     }
-    return undefined;
 }
 
 export function getNoiseSuppressionEngine(): NoiseSuppressionEngine {

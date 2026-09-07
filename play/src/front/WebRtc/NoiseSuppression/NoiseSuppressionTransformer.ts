@@ -18,9 +18,8 @@ export type { NoiseSuppressionStatusMessage } from "./NoiseSuppressionTransforme
 const NOISE_SUPPRESSION_SAMPLE_RATE = DTLN_SAMPLE_RATE;
 
 /**
- * Legacy DTLN noise suppression engine, kept behind the `VITE_NOISE_SUPPRESSION_ENGINE=dtln`
- * feature flag so it is possible to switch back from DeepFilterNet3.
- * @see NoiseSuppressionTransformerFactory
+ * The default DTLN noise suppression engine.
+ * @see NoiseSuppressionTransformerFactory for how the engine is selected.
  */
 export class NoiseSuppressionTransformer implements NoiseSuppressionTransformerInterface {
     private readonly audioContext: AudioContext;

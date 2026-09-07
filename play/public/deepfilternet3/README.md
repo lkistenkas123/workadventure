@@ -1,5 +1,10 @@
 # DeepFilterNet3 assets (self-hosted)
 
+> **DeepFilterNet3 is not the active engine.** DTLN is the default; DeepFilterNet3 degraded speech
+> too much in testing. These assets stay committed so the engine can be switched back on (build
+> flag `VITE_NOISE_SUPPRESSION_ENGINE=deepfilternet3`, or `__noiseSuppression.useDeepFilterNet3()`
+> in the browser console) without re-fetching 24 MB.
+
 The `deepfilternet3-noise-filter` package fetches two binaries at runtime:
 
 | File | Size |
