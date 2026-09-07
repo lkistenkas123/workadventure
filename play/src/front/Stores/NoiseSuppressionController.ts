@@ -1,13 +1,17 @@
 import { get } from "svelte/store";
 import { AbortError } from "@workadventure/shared-utils/src/Abort/AbortError";
 import {
-    type NoiseSuppressionStatusMessage,
-    NoiseSuppressionTransformer,
-} from "../WebRtc/NoiseSuppression/NoiseSuppressionTransformer";
+    createNoiseSuppressionTransformer,
+    getNoiseSuppressionSupport,
+} from "../WebRtc/NoiseSuppression/NoiseSuppressionTransformerFactory";
+import type {
+    NoiseSuppressionStatusMessage,
+    NoiseSuppressionTransformerInterface,
+} from "../WebRtc/NoiseSuppression/NoiseSuppressionTransformerTypes";
 import { noiseSuppressionStateStore } from "./NoiseSuppressionStore";
 
 export class NoiseSuppressionController {
-    private transformer: NoiseSuppressionTransformer | undefined;
+    private transformer: NoiseSuppressionTransformerInterface | undefined;
 
     public async transform(
         audioTrack: MediaStreamTrack | undefined,
@@ -32,7 +36,7 @@ export class NoiseSuppressionController {
             return audioTrack;
         }
 
-        const support = NoiseSuppressionTransformer.getSupport();
+        const support = getNoiseSuppressionSupport();
         if (!support.supported) {
             await this.destroy();
             noiseSuppressionStateStore.set({
@@ -48,7 +52,7 @@ export class NoiseSuppressionController {
 
         try {
             if (!this.transformer) {
-                this.transformer = new NoiseSuppressionTransformer({
+                this.transformer = createNoiseSuppressionTransformer({
                     onStatusChange: this.updateState.bind(this),
                 });
             }

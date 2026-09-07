@@ -16,6 +16,7 @@ import {
     createBackgroundTransformer,
 } from "../WebRtc/BackgroundProcessor/createBackgroundTransformer";
 import { LL } from "../../i18n/i18n-svelte";
+import { getNoiseSuppressionSampleRate } from "../WebRtc/NoiseSuppression/NoiseSuppressionEngineConfig";
 import { MediaStreamConstraintsError } from "./Errors/MediaStreamConstraintsError";
 import { BrowserTooOldError } from "./Errors/BrowserTooOldError";
 import { errorStore, warningMessageStore } from "./ErrorStore";
@@ -342,6 +343,7 @@ export const audioConstraintStore = derived(
             voiceIsolationAdvertised: supportedConstraints?.voiceIsolation === true,
             deviceIdSupported: supportedConstraints?.deviceId === true,
             sampleRateSupported: supportedConstraints?.sampleRate === true,
+            noiseSuppressionSampleRate: getNoiseSuppressionSampleRate(),
         });
 
         if (typeof constraints === "boolean") {

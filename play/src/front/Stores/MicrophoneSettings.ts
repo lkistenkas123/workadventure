@@ -18,6 +18,11 @@ export interface BuildMicrophoneAudioConstraintsOptions {
     voiceIsolationAdvertised: boolean;
     deviceIdSupported: boolean;
     sampleRateSupported: boolean;
+    /**
+     * Sample rate requested from getUserMedia while the custom engine is active.
+     * DeepFilterNet3 requires 48000 Hz, the legacy DTLN model 16000 Hz.
+     */
+    noiseSuppressionSampleRate: number;
 }
 
 export function getEffectiveNoiseSuppressionProvider({
@@ -43,6 +48,7 @@ export function buildMicrophoneAudioConstraints({
     voiceIsolationAdvertised,
     deviceIdSupported,
     sampleRateSupported,
+    noiseSuppressionSampleRate,
 }: BuildMicrophoneAudioConstraintsOptions): MediaTrackConstraints {
     const shouldUseBrowserNoiseSuppression =
         browserNoiseSuppressionEnabled &&
@@ -62,7 +68,7 @@ export function buildMicrophoneAudioConstraints({
         constraints.deviceId = { exact: microphoneDeviceId };
     }
     if (customNoiseSuppressionActive && sampleRateSupported) {
-        constraints.sampleRate = { ideal: 16000 };
+        constraints.sampleRate = { ideal: noiseSuppressionSampleRate };
     }
 
     return constraints;

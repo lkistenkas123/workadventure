@@ -5,23 +5,24 @@ import {
     type NoiseSuppressionAudioWorkletHandle,
     type NoiseSuppressionAudioWorkletOutboundMessage,
 } from "@workadventure/noise-suppression/audio-worklet";
+import { DTLN_SAMPLE_RATE } from "./NoiseSuppressionEngineConfig";
+import type {
+    NoiseSuppressionStatusMessage,
+    NoiseSuppressionSupport,
+    NoiseSuppressionTransformerInterface,
+    NoiseSuppressionTransformerOptions,
+} from "./NoiseSuppressionTransformerTypes";
 
-export interface NoiseSuppressionStatusMessage {
-    status: "initializing" | "ready" | "error";
-    message?: string;
-}
+export type { NoiseSuppressionStatusMessage } from "./NoiseSuppressionTransformerTypes";
 
-interface NoiseSuppressionTransformerOptions {
-    onStatusChange?: (message: NoiseSuppressionStatusMessage) => void;
-}
+const NOISE_SUPPRESSION_SAMPLE_RATE = DTLN_SAMPLE_RATE;
 
-interface NoiseSuppressionSupport {
-    supported: boolean;
-    message?: string;
-}
-
-const NOISE_SUPPRESSION_SAMPLE_RATE = 16000;
-export class NoiseSuppressionTransformer {
+/**
+ * Legacy DTLN noise suppression engine, kept behind the `VITE_NOISE_SUPPRESSION_ENGINE=dtln`
+ * feature flag so it is possible to switch back from DeepFilterNet3.
+ * @see NoiseSuppressionTransformerFactory
+ */
+export class NoiseSuppressionTransformer implements NoiseSuppressionTransformerInterface {
     private readonly audioContext: AudioContext;
     private readonly onStatusChange?: (message: NoiseSuppressionStatusMessage) => void;
     private lastProcessorStatus: NoiseSuppressionStatusMessage["status"] | undefined;

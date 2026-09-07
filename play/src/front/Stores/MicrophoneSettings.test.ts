@@ -42,6 +42,7 @@ describe("buildMicrophoneAudioConstraints", () => {
         voiceIsolationAdvertised: true,
         deviceIdSupported: true,
         sampleRateSupported: true,
+        noiseSuppressionSampleRate: 48000,
     };
 
     it("keeps browser microphone processing enabled by default when WorkAdventure noise suppression is off", () => {
@@ -117,7 +118,7 @@ describe("buildMicrophoneAudioConstraints", () => {
         ).toMatchObject({
             deviceId: { exact: "mic-1" },
             noiseSuppression: false,
-            sampleRate: { ideal: 16000 },
+            sampleRate: { ideal: 48000 },
             voiceIsolation: false,
         });
     });
