@@ -326,6 +326,13 @@ services:
       traefik.http.routers.map-storage-ssl.tls.certresolver: "myresolver"
     restart: ${RESTART_POLICY}
 
+  coturn:
+    image: coturn/coturn:latest
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf
+
 volumes:
   redisdata:
   map-storage-data:
