@@ -39,9 +39,20 @@ export const DEEPFILTERNET3_ASSET_BASE_URL: string =
     viteEnv.VITE_DEEPFILTERNET3_ASSET_BASE_URL?.replace(/\/+$/, "") || "/deepfilternet3";
 
 /**
- * Noise reduction strength (attenuation limit in dB, 0-100) handed to DeepFilterNet3.
+ * Noise reduction strength handed to DeepFilterNet3: the attenuation limit in dB, clamped to 0-100.
+ * Lower values suppress less noise but leave the voice more intact; 100 lets the model attenuate
+ * as much as it wants, which is also where it is most likely to chew on speech.
+ * Override with `VITE_DEEPFILTERNET3_NOISE_REDUCTION_LEVEL` to retune without touching the code.
  */
-export const DEEPFILTERNET3_NOISE_REDUCTION_LEVEL = 50;
+function readNoiseReductionLevel(): number {
+    const parsed = Number.parseInt(viteEnv.VITE_DEEPFILTERNET3_NOISE_REDUCTION_LEVEL ?? "", 10);
+    if (Number.isNaN(parsed)) {
+        return 50;
+    }
+    return Math.max(0, Math.min(100, parsed));
+}
+
+export const DEEPFILTERNET3_NOISE_REDUCTION_LEVEL = readNoiseReductionLevel();
 
 /**
  * DeepFilterNet3 only runs at 48 kHz; the legacy DTLN model expects 16 kHz.

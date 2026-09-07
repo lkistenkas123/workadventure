@@ -180,8 +180,68 @@ export class DeepFilterNet3Transformer {
         this.disconnect(this.bypassNode);
         this.bypassNode = undefined;
 
+        this.logDiagnostics();
+        this.exposeTuningHandle();
+
         this.lastProcessorStatus = "ready";
         this.onStatusChange?.({ status: "ready" });
+    }
+
+    /**
+     * DeepFilterNet3 is trained for 48 kHz and its worklet never verifies the rate it actually runs
+     * at: it just asks the model for a frame length (480 samples = 10 ms at 48 kHz) and keeps going.
+     * Running the graph at any other rate feeds the model spectrally shifted audio, which sounds
+     * muffled and telephone-like and makes it attenuate speech along with the noise. Log loudly so
+     * that this is visible instead of being mistaken for a bad model.
+     */
+    private logDiagnostics(): void {
+        const contextRate = this.audioContext.sampleRate;
+        const trackSettings = this.inputTrack?.getSettings();
+
+        console.info("[DeepFilterNet3Transformer] ready", {
+            audioContextSampleRate: contextRate,
+            microphoneSampleRate: trackSettings?.sampleRate,
+            channelCount: trackSettings?.channelCount,
+            echoCancellation: trackSettings?.echoCancellation,
+            autoGainControl: trackSettings?.autoGainControl,
+            browserNoiseSuppression: trackSettings?.noiseSuppression,
+            noiseReductionLevel: DEEPFILTERNET3_NOISE_REDUCTION_LEVEL,
+        });
+
+        if (contextRate !== DEEPFILTERNET3_SAMPLE_RATE) {
+            console.warn(
+                `[DeepFilterNet3Transformer] AudioContext runs at ${contextRate} Hz but DeepFilterNet3 ` +
+                    `expects ${DEEPFILTERNET3_SAMPLE_RATE} Hz. Expect muffled audio and speech being ` +
+                    `attenuated along with the noise.`,
+            );
+        }
+    }
+
+    /**
+     * Attenuation can be retuned live from the browser console, so a value can be A/B tested without
+     * a rebuild: `__deepFilterNet3.setLevel(20)`. Persist the winner via
+     * VITE_DEEPFILTERNET3_NOISE_REDUCTION_LEVEL.
+     */
+    private exposeTuningHandle(): void {
+        if (typeof window === "undefined") {
+            return;
+        }
+
+        (window as unknown as Record<string, unknown>).__deepFilterNet3 = {
+            setLevel: (level: number) => {
+                this.core.setSuppressionLevel(level);
+                return `DeepFilterNet3 attenuation limit set to ${level} dB`;
+            },
+            setBypass: (bypass: boolean) => {
+                this.core.setNoiseSuppressionEnabled(!bypass);
+                return bypass ? "DeepFilterNet3 bypassed (raw microphone)" : "DeepFilterNet3 active";
+            },
+            info: () => ({
+                audioContextSampleRate: this.audioContext.sampleRate,
+                microphoneSettings: this.inputTrack?.getSettings(),
+                noiseReductionLevel: DEEPFILTERNET3_NOISE_REDUCTION_LEVEL,
+            }),
+        };
     }
 
     private reportFailure(error: unknown): void {
