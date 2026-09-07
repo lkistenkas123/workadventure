@@ -1,5 +1,5 @@
 import { DeepFilterNet3Transformer } from "./DeepFilterNet3Transformer";
-import { NOISE_SUPPRESSION_ENGINE } from "./NoiseSuppressionEngineConfig";
+import { getNoiseSuppressionEngine } from "./NoiseSuppressionEngineConfig";
 import { NoiseSuppressionTransformer } from "./NoiseSuppressionTransformer";
 import type {
     NoiseSuppressionSupport,
@@ -14,7 +14,7 @@ import type {
 export function createNoiseSuppressionTransformer(
     options?: NoiseSuppressionTransformerOptions,
 ): NoiseSuppressionTransformerInterface {
-    if (NOISE_SUPPRESSION_ENGINE === "dtln") {
+    if (getNoiseSuppressionEngine() === "dtln") {
         return new NoiseSuppressionTransformer(options);
     }
 
@@ -22,7 +22,7 @@ export function createNoiseSuppressionTransformer(
 }
 
 export function getNoiseSuppressionSupport(): NoiseSuppressionSupport {
-    if (NOISE_SUPPRESSION_ENGINE === "dtln") {
+    if (getNoiseSuppressionEngine() === "dtln") {
         return NoiseSuppressionTransformer.getSupport();
     }
 

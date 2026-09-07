@@ -21,10 +21,59 @@ const viteEnv: Record<string, string | undefined> =
 const DEFAULT_ENGINE: NoiseSuppressionEngine = "deepfilternet3";
 
 /**
- * Feature flag: set `VITE_NOISE_SUPPRESSION_ENGINE=dtln` to fall back to the legacy DTLN worklet.
+ * Build-time feature flag: set `VITE_NOISE_SUPPRESSION_ENGINE=dtln` to ship the legacy DTLN worklet.
  */
-export const NOISE_SUPPRESSION_ENGINE: NoiseSuppressionEngine =
+const ENGINE_FROM_ENV: NoiseSuppressionEngine =
     viteEnv.VITE_NOISE_SUPPRESSION_ENGINE === "dtln" ? "dtln" : DEFAULT_ENGINE;
+
+/**
+ * Runtime override, so both engines can be A/B tested without a rebuild. Both are bundled anyway;
+ * the build-time flag only decides which one is picked by default.
+ */
+const ENGINE_OVERRIDE_KEY = "noiseSuppressionEngine";
+
+function readEngineOverride(): NoiseSuppressionEngine | undefined {
+    try {
+        const stored = localStorage.getItem(ENGINE_OVERRIDE_KEY);
+        if (stored === "dtln" || stored === "deepfilternet3") {
+            return stored;
+        }
+    } catch {
+        // localStorage can be unavailable (private mode, blocked site data); use the build flag.
+    }
+    return undefined;
+}
+
+export function getNoiseSuppressionEngine(): NoiseSuppressionEngine {
+    return readEngineOverride() ?? ENGINE_FROM_ENV;
+}
+
+/**
+ * Console helper for switching engines while debugging: `__noiseSuppression.useDtln()`.
+ * The engine is read when the audio graph is built, so the page is reloaded to apply it.
+ */
+if (typeof window !== "undefined") {
+    const setEngine = (engine: NoiseSuppressionEngine | undefined) => {
+        try {
+            if (engine === undefined) {
+                localStorage.removeItem(ENGINE_OVERRIDE_KEY);
+            } else {
+                localStorage.setItem(ENGINE_OVERRIDE_KEY, engine);
+            }
+        } catch {
+            return "Could not persist the choice: localStorage is unavailable.";
+        }
+        window.location.reload();
+        return `Noise suppression engine set to ${engine ?? ENGINE_FROM_ENV}, reloading...`;
+    };
+
+    (window as unknown as Record<string, unknown>).__noiseSuppression = {
+        engine: () => getNoiseSuppressionEngine(),
+        useDtln: () => setEngine("dtln"),
+        useDeepFilterNet3: () => setEngine("deepfilternet3"),
+        reset: () => setEngine(undefined),
+    };
+}
 
 /**
  * Base URL the DeepFilterNet3 assets are fetched from. The loader appends:
@@ -61,6 +110,6 @@ export const DEEPFILTERNET3_NOISE_REDUCTION_LEVEL = readNoiseReductionLevel();
 export const DEEPFILTERNET3_SAMPLE_RATE = 48000;
 export const DTLN_SAMPLE_RATE = 16000;
 
-export function getNoiseSuppressionSampleRate(engine: NoiseSuppressionEngine = NOISE_SUPPRESSION_ENGINE): number {
+export function getNoiseSuppressionSampleRate(engine: NoiseSuppressionEngine = getNoiseSuppressionEngine()): number {
     return engine === "dtln" ? DTLN_SAMPLE_RATE : DEEPFILTERNET3_SAMPLE_RATE;
 }
