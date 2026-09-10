@@ -10,6 +10,7 @@
     import { getItemsPerRow } from "./ItemsPerRow";
     import WokaImage from "./WokaImage.svelte";
     import { IconShuffle } from "@wa-icons";
+    import bgMap from "../images/login-background.jpg";
 
     /* eslint-disable svelte/require-each-key */
 
@@ -202,7 +203,9 @@
     });
 </script>
 
-<div class="mobile-webkit bg-contrast w-screen md:!mt-[15vh] h-full md:!h-[70vh] flex items-center justify-center">
+<div class="mobile-webkit w-screen md:!mt-[15vh] h-full md:!h-[70vh] flex items-center justify-center relative z-10">
+    <div class="fixed inset-0 bg-cover bg-center z-0" style="background-image: url({bgMap})"></div>
+    <div class="fixed inset-0 bg-contrast opacity-80 z-0"></div>
     <div
         class="mobile-webkit rounded-lg flex flex-col max-w-4xl w-full h-full m-4 relative bg-white/10 backdrop-blur-md"
     >
