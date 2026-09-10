@@ -7,6 +7,7 @@
     import { collectionsSizeStore, selectedCollection } from "../../Stores/SelectCharacterSceneStore";
     import { analyticsClient } from "../../Administration/AnalyticsClient";
     import { IconChevronLeft, IconChevronRight } from "@wa-icons";
+    import bgMap from "../images/login-background.jpg";
 
     interface Props {
         game: Game;
@@ -41,66 +42,70 @@
     }
 </script>
 
-<section class="text-center absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[calc(50%+20vh)] h-16">
-    <span class="text-white text-lg bold">
-        {$LL.companion.select.title()}
-    </span>
-</section>
-<section class="category flex flex-row justify-center">
-    {#if $collectionsSizeStore > 1 && $selectedCollection}
-        <button
-            class="light mr-2 selectCharacterButton"
-            onclick={(event) => {
-                event.preventDefault();
-                selectLeftCollection();
-            }}
-        >
-            <IconChevronLeft />
-        </button>
-        <strong class="category-text">{$selectedCollection}</strong>
-        <button
-            class="outline ml-2 selectCharacterButton"
-            onclick={(event) => {
-                event.preventDefault();
-                selectRightCollection();
-            }}
-        >
-            <IconChevronRight />
-        </button>
-    {/if}
-</section>
-<div
-    class="fixed bottom-0 w-full bg-contrast/80 backdrop-blur-md border border-solid border-t border-b-0 border-x-0 border-white/10"
->
-    <section
-        class="action container m-auto p-4 flex flex-col-reverse md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 justify-between"
-    >
-        <Button
-            variant="light"
-            appearance="ghost"
-            size="lg"
-            class="w-full md:w-1/2 block selectCompanionSceneFormBack pointer-events-auto"
-            onclick={(event) => {
-                event.preventDefault();
-                noCompanion();
-            }}
-        >
-            {$LL.companion.select.any()}
-        </Button>
-        <Button
-            type="submit"
-            variant="secondary"
-            size="lg"
-            class="w-full md:w-1/2 block selectCompanionSceneFormSubmit pointer-events-auto"
-            onclick={(event) => {
-                event.preventDefault();
-                analyticsClient.selectCompanion();
-                selectCompanion();
-            }}
-        >
-            {$LL.companion.select.continue()}
-        </Button>
+<div class="fixed inset-0 z-10">
+    <div class="fixed inset-0 bg-cover bg-center z-0" style="background-image: url({bgMap})"></div>
+    <div class="fixed inset-0 bg-contrast opacity-80 z-0"></div>
+    <section class="text-center absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[calc(50%+20vh)] h-16">
+        <span class="text-white text-lg bold">
+            {$LL.companion.select.title()}
+        </span>
     </section>
+    <section class="category flex flex-row justify-center">
+        {#if $collectionsSizeStore > 1 && $selectedCollection}
+            <button
+                class="light mr-2 selectCharacterButton"
+                onclick={(event) => {
+                    event.preventDefault();
+                    selectLeftCollection();
+                }}
+            >
+                <IconChevronLeft />
+            </button>
+            <strong class="category-text">{$selectedCollection}</strong>
+            <button
+                class="outline ml-2 selectCharacterButton"
+                onclick={(event) => {
+                    event.preventDefault();
+                    selectRightCollection();
+                }}
+            >
+                <IconChevronRight />
+            </button>
+        {/if}
+    </section>
+    <div
+        class="fixed bottom-0 w-full bg-contrast/80 backdrop-blur-md border border-solid border-t border-b-0 border-x-0 border-white/10"
+    >
+        <section
+            class="action container m-auto p-4 flex flex-col-reverse md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 justify-between"
+        >
+            <Button
+                variant="light"
+                appearance="ghost"
+                size="lg"
+                class="w-full md:w-1/2 block selectCompanionSceneFormBack pointer-events-auto"
+                onclick={(event) => {
+                    event.preventDefault();
+                    noCompanion();
+                }}
+            >
+                {$LL.companion.select.any()}
+            </Button>
+            <Button
+                type="submit"
+                variant="secondary"
+                size="lg"
+                class="w-full md:w-1/2 block selectCompanionSceneFormSubmit pointer-events-auto"
+                onclick={(event) => {
+                    event.preventDefault();
+                    analyticsClient.selectCompanion();
+                    selectCompanion();
+                }}
+            >
+                {$LL.companion.select.continue()}
+            </Button>
+        </section>
+    </div>
 </div>
 
 <!--<form class="selectCompanionScene">-->
