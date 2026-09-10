@@ -176,6 +176,8 @@ services:
       - GROUP_RADIUS=${GROUP_RADIUS}
       - SECRET_JITSI_KEY
       - ENABLE_MAP_EDITOR
+      - MAP_EDITOR_ALLOWED_USERS
+      - MAP_EDITOR_ALLOW_ALL_USERS
       - SECRET_KEY
       - ADMIN_API_TOKEN
       - ADMIN_API_URL
@@ -336,6 +338,22 @@ services:
     volumes:
       - ./turnserver.conf:/etc/coturn/turnserver.conf
 
+  teo-auth:
+    build: /home/kras/teo-auth
+    container_name: teo-auth
+    restart: ${RESTART_POLICY}
+    env_file:
+      - /home/kras/teo-auth/.env
+    volumes:
+      - teo-auth-data:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.teo-auth.rule=Host(`auth.nomadworkmates.com`)"
+      - "traefik.http.routers.teo-auth.entrypoints=websecure"
+      - "traefik.http.routers.teo-auth.tls.certresolver=myresolver"
+      - "traefik.http.services.teo-auth.loadbalancer.server.port=3000"
+
 volumes:
   redisdata:
   map-storage-data:
+  teo-auth-data:
