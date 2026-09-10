@@ -336,14 +336,14 @@ services:
     restart: unless-stopped
     network_mode: host
     volumes:
-      - ./turnserver.conf:/etc/coturn/turnserver.conf
+      - /home/kras/teo/coturn/turnserver.conf:/etc/coturn/turnserver.conf
 
   teo-auth:
-    build: /home/kras/teo-auth
+    build: /home/kras/teo/auth
     container_name: teo-auth
     restart: ${RESTART_POLICY}
     env_file:
-      - /home/kras/teo-auth/.env
+      - /home/kras/teo/auth/.env
     volumes:
       - teo-auth-data:/app/data
     labels:
