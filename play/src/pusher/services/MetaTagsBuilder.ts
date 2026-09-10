@@ -13,7 +13,7 @@ import { ADMIN_API_URL } from "../enums/EnvironmentVariable";
 import { adminService } from "./AdminService";
 
 export const MetaTagsDefaultValue: RequiredMetaTagsData = {
-    title: "WorkAdventure",
+    title: "The Everywhere Office - Nomad Workmates",
     description:
         "Organize your online event in WorkAdventure to recreate spontaneous social interactions. Connect, collaborate and have fun with your teammates and attendees.",
     author: "WorkAdventure team",
