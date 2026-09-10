@@ -168,7 +168,7 @@
         {/if}
     </div>
     {#if logo !== logoImg && gameManager.currentStartedRoom.showPoweredBy !== false}
-        <section class="text-right flex powered-by justify-center items-end">
+        <section class="powered-by flex justify-center items-end absolute bottom-8 inset-x-0">
             <img draggable="false" src={poweredByWorkAdventureImg} alt="Powered by WorkAdventure" class="h-14" />
         </section>
     {/if}
