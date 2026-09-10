@@ -2,7 +2,7 @@
     import { onDestroy, onMount } from "svelte";
     import { LL } from "../../../i18n/i18n-svelte";
     import logoImg from "../images/logo.svg";
-    import bgMap from "../images/map-exemple.png";
+    import bgMap from "../images/login-background.jpg";
     import poweredByWorkAdventureImg from "../images/Powered_By_WorkAdventure_Big.png";
     import pwaDefaultBackground from "../images/pwa-background-image.jpg";
     import { gameManager } from "../../Phaser/Game/GameManager";

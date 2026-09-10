@@ -21,7 +21,7 @@
     import { localUserStore } from "../../Connection/LocalUserStore";
     import { gameManager } from "../../Phaser/Game/GameManager";
 
-    import bgMap from "../images/map-exemple.png";
+    import bgMap from "../images/login-background.jpg";
     import Button from "../UI/Button.svelte";
     import HorizontalSoundMeterWidget from "./HorizontalSoundMeterWidget.svelte";
     import SelectMicrophone from "./SelectMicrophone.svelte";

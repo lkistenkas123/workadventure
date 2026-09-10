@@ -30,7 +30,7 @@
     import MapDeletedPrompt from "./MapDeletedPrompt.svelte";
     import LoaderScene from "./Loader/LoaderScene.svelte";
     import EnableCameraScene from "./EnableCamera/EnableCameraScene.svelte";
-    import bgMap from "./images/map-exemple.png";
+    import bgMap from "./images/login-background.jpg";
     import defaultLoader from "./images/Workadventure.gif";
     import GlobalCommunicationModal from "./Modal/GlobalCommunicationModal.svelte";
     import Calendar from "./Calendar/Calendar.svelte";
