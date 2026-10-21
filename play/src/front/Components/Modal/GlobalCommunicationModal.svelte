@@ -39,6 +39,7 @@
     let inputSendTextActive = $state(false);
     let uploadAudioActive = $state(false);
     let broadcastToWorld = $state(false);
+    let sending = $state(false);
     let handleSendText: TextGlobalMessageHandle | undefined = $state();
     let handleSendAudio: AudioGlobalMessageHandle | undefined = $state();
     let stream: MediaStream | undefined = $state();
@@ -72,21 +73,21 @@
         displayedMegaphoneScreenStore.set(true);
         inputSendTextActive = false;
         uploadAudioActive = false;
-        analyticsClient.openMegaphone();
+        analyticsClient.trackAdminEvent("megaphone.opened");
     }
 
     function activateInputText() {
         displayedMegaphoneScreenStore.set(false);
         inputSendTextActive = true;
         uploadAudioActive = false;
-        analyticsClient.openGlobalMessage();
+        analyticsClient.trackAdminEvent("global_message.opened", { source: "action_bar" });
     }
 
     function activateUploadAudio() {
         displayedMegaphoneScreenStore.set(false);
         inputSendTextActive = false;
         uploadAudioActive = true;
-        analyticsClient.openGlobalAudio();
+        analyticsClient.trackAdminEvent("global_audio.opened");
     }
 
     function back() {
@@ -95,14 +96,22 @@
         uploadAudioActive = false;
     }
 
-    function send(): void {
+    async function send(): Promise<void> {
         if (inputSendTextActive) {
-            analyticsClient.sendGlocalTextMessage();
+            analyticsClient.trackAdminEvent("global_message.text_sent");
             handleSendText?.sendTextMessage(broadcastToWorld);
         }
         if (uploadAudioActive) {
-            analyticsClient.sendGlobalSoundMessage();
-            handleSendAudio?.sendAudioMessage(broadcastToWorld);
+            analyticsClient.trackAdminEvent("global_message.sound_sent");
+            sending = true;
+            try {
+                // On failure, stay open: the error is shown under the upload area.
+                if (!(await handleSendAudio?.sendAudioMessage(broadcastToWorld))) {
+                    return;
+                }
+            } finally {
+                sending = false;
+            }
         }
         close();
     }
@@ -395,9 +404,10 @@
                         <section class="centered-column">
                             <Button
                                 variant="light"
+                                disabled={sending}
                                 onclick={(event) => {
                                     event.preventDefault();
-                                    send();
+                                    send().catch((e) => console.error(e));
                                 }}
                             >
                                 {$LL.menu.globalMessage.send()}

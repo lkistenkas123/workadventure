@@ -168,11 +168,13 @@
                         dataTestId={action.testId}
                         variant="light"
                         appearance="ghost"
-                        class="text-nowrap my-2 mx-1 min-w-0 {action.style ?? ''} {buttonsLayout === 'column'
-                            ? 'mx-2'
-                            : ''}"
+                        class="text-nowrap my-2 mx-1 min-w-0 {action.style ??
+                            'bg-white/10 hover:bg-white/30'} {buttonsLayout === 'column' ? 'mx-2' : ''}"
                         onclick={(event) => {
-                            analyticsClient.clickPropertyMapEditor(action.actionName, action.style);
+                            analyticsClient.trackAdminEvent("map_editor.property.clicked", {
+                                name: action.actionName,
+                                style: action.style,
+                            });
                             event.preventDefault();
                             closeActionsMenu();
                             action.callback();

@@ -87,6 +87,9 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
             defaultButtonLabel: "تشغيل الموسيقى",
             error: "تعذر تحميل الصوت",
             actionButtonLabel: "تشغيل الموسيقى",
+            playForAllUsersLabel: "تشغيل لجميع المستخدمين على الخريطة",
+            audibleRadiusLabel: "نطاق السماع (بالبكسل)",
+            audibleRadiusPlaceholder: "مسموع في كل مكان إذا كان فارغًا",
         },
         openWebsite: {
             label: "فتح رابط",
@@ -138,6 +141,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
         },
         chatEnabled: "ربط قناة دردشة مخصصة",
         allowTalking: "السماح بالتحدث وتشكيل الفقاعات",
+        raiseHandEnabled: "السماح برفع اليد",
         seeAttendees: "عرض الحضور",
         start: {
             label: "منطقة البداية",
@@ -304,6 +308,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 startWithAudioMuted: "بدء مع ميكروفون مكتوم",
                 startWithVideoMuted: "بدء مع كاميرا مغلقة",
                 disableChat: "تعطيل الدردشة",
+                raiseHandEnabled: "السماح برفع اليد",
                 livekitRoomAdminTag: "وسم المشرف لغرفة الاجتماع",
                 cancel: "إلغاء",
                 validate: "اعتماد",
@@ -450,7 +455,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 audienceVideoFeedbackActivated: "وضع القاعة مفعّل",
                 audienceVideoFeedbackActivatedDisabled: "وضع القاعة معطّل",
                 audienceVideoFeedbackActivatedHelper:
-                    "وضع القاعة مفعّل: استقبل تدفق الكاميرا والميكروفون لجميع المستخدمين (مع تفعيل الكاميرا والميكروفون) في الغرفة/العالم. لكن الحاضر لن يتمكن من رؤية الحاضرين الآخرين. معطّل افتراضيًا.",
+                    "وضع القاعة مفعّل: استقبل تدفق الكاميرا لجميع المستخدمين (مع تفعيل الكاميرا) في الغرفة/العالم، بدون صوتهم. لكن الحاضر لن يتمكن من رؤية الحاضرين الآخرين. معطّل افتراضيًا.",
                 error: {
                     title: "يرجى إدخال عنوان",
                     save: {

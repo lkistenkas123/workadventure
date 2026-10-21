@@ -7,11 +7,9 @@ const warning: DeepPartial<Translation["warning"]> = {
     limit: "โลกนี้ใกล้ถึงขีดจำกัดแล้ว!",
     accessDenied: {
         camera: "การเข้าถึงกล้องถูกปฏิเสธ คลิกที่นี่และตรวจสอบสิทธิ์ในเบราว์เซอร์ของคุณ",
-        screenSharing: "การแชร์หน้าจอถูกปฏิเสธ คลิกที่นี่และตรวจสอบสิทธิ์ในเบราว์เซอร์ของคุณ",
         teleport: "คุณไม่มีสิทธิ์เทเลพอร์ตไปหาผู้ใช้นี้",
         room: "การเข้าถึงห้องถูกปฏิเสธ คุณไม่ได้รับอนุญาตให้เข้าห้องนี้",
     },
-    importantMessage: "ข้อความสำคัญ",
     connectionLost: "การเชื่อมต่อขาดหาย กำลังเชื่อมต่อใหม่...",
     connectionLostTitle: "การเชื่อมต่อขาดหาย",
     connectionLostSubtitle: "กำลังเชื่อมต่อใหม่",
@@ -27,6 +25,7 @@ const warning: DeepPartial<Translation["warning"]> = {
     },
     backgroundProcessing: {
         failedToApply: "ไม่สามารถใช้เอฟเฟกต์พื้นหลังได้",
+        notSupportedOnThisBrowser: "เบราว์เซอร์นี้ไม่รองรับเอฟเฟกต์พื้นหลัง",
     },
     duplicateUserConnected: {
         title: "เชื่อมต่ออยู่แล้ว",

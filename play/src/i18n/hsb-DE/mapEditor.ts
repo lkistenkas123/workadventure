@@ -87,6 +87,9 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
             volumeLabel: "sylnosć zwuka",
             error: "Zwuk njemóže so začitać",
             actionButtonLabel: "Hudźbu wothrać",
+            playForAllUsersLabel: "Za wšitkich wužiwarjow na karće wothrać",
+            audibleRadiusLabel: "Radius słyšenja (w pikselach)",
+            audibleRadiusPlaceholder: "Wšudźe słyšomny, jeli prózdny",
         },
         openWebsite: {
             label: "Link wočinić",
@@ -139,6 +142,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
         },
         chatEnabled: "Chat aktiwizowany",
         allowTalking: "Rěčenje a tworjenje pucherjow dowolić",
+        raiseHandEnabled: "Zběhnjenje ruki dowolić",
         seeAttendees: "Wobdźělnikow pokazać",
         start: {
             label: "startowy wobłuk",
@@ -308,6 +312,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 startWithAudioMuted: "Z deaktiwěrowanym mikrofonom startować",
                 startWithVideoMuted: "Z deaktiwěrowanej kameru startować",
                 disableChat: "Chat deaktiwěrować",
+                raiseHandEnabled: "Zběhnjenje ruki dowolić",
                 livekitRoomAdminTag: "Moderatorowa toflicka za meetingowy rum",
                 cancel: "přetorhnyć",
                 validate: "waliděrować",
@@ -455,7 +460,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 audienceVideoFeedbackActivated: "Auditoriumowy modus zmóžnjeny",
                 audienceVideoFeedbackActivatedDisabled: "Auditoriumowy modus znjemóžnjeny",
                 audienceVideoFeedbackActivatedHelper:
-                    "Auditoriumowy modus zmóžnjeny: Dóstaće přenosowanje kamery a mikrofona wšěch wužiwarjow (z zmóžnjenej kameru a mikrofonom) w runinje/swěće. Ale wobdźělnik njemóže druhich wobdźělnikow widźeć. Po standardźe znjemóžnjeny.",
+                    "Auditoriumowy modus zmóžnjeny: Dóstaće přenosowanje kamery wšěch wužiwarjow (z zmóžnjenej kameru) w runinje/swěće, bjez jich zynka. Ale wobdźělnik njemóže druhich wobdźělnikow widźeć. Po standardźe znjemóžnjeny.",
                 error: {
                     title: "Prošu zapodać mjeno",
                     save: {

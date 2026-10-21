@@ -4,7 +4,7 @@ import type { ChatMessage as NewChatMessage } from "../Connection/ChatConnection
 import { chatVisibilityStore } from "../../Stores/ChatStore";
 import { ENABLE_CHAT } from "../../Enum/EnvironmentVariable";
 import { gameManager } from "../../Phaser/Game/GameManager";
-import { matrixSecurity } from "../Connection/Matrix/MatrixSecurity";
+import { getMatrixSecurity } from "../Connection/Matrix/getMatrixSecurity";
 import { analyticsClient } from "../../Administration/AnalyticsClient";
 import { localUserStore } from "../../Connection/LocalUserStore";
 import { selectedRoomStore } from "./SelectRoomStore";
@@ -30,7 +30,7 @@ function createNavChatStore() {
         subscribe,
         switchToChat() {
             set({ key: "chat" });
-            analyticsClient.openMessageList();
+            analyticsClient.trackAdminEvent("chat.message_list_opened");
         },
         switchToUserList() {
             const room = gameManager.getCurrentGameScene().room;
@@ -39,8 +39,8 @@ function createNavChatStore() {
 
             if (isChatOnlineListEnabled || isChatDisconnectedListEnabled) {
                 set({ key: "users" });
+                analyticsClient.trackAdminEvent("user_list.opened");
             }
-            analyticsClient.openUserList();
         },
         switchToCustomComponent(component: WorkAdventureComponent, props?: WorkAdventureComponentProps) {
             set({ key: "externalModule", component, props });
@@ -81,9 +81,11 @@ export function initializeChatVisibilitySubscription() {
         const isEncrypted = get(selectedRoom.isEncrypted);
 
         if (visible && isEncrypted) {
-            matrixSecurity.openAutomaticChooseDeviceVerificationMethodModal().catch((error) => {
-                console.error(error);
-            });
+            getMatrixSecurity()
+                .then((matrixSecurity) => matrixSecurity.openAutomaticChooseDeviceVerificationMethodModal())
+                .catch((error) => {
+                    console.error(error);
+                });
         }
     });
 

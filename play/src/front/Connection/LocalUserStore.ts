@@ -44,6 +44,8 @@ const matrixAccessTokenExpireDate = "matrixAccessTokenExpireDate";
 const matrixRefreshToken = "matrixRefreshToken";
 const matrixDeviceId = "matrixDeviceId";
 const matrixLoginToken = "matrixLoginToken";
+const matrixStoresNeedClearing = "matrixStoresNeedClearing";
+const matrixSessionOwner = "matrixSessionOwner";
 const requestedStatus = "RequestedStatus";
 const matrixGuest = "matrixGuest";
 const pwaInstallPromptShownKey = "workadventure_pwa_install_prompt_shown";
@@ -61,10 +63,12 @@ export const languageKey = "language";
 const videoQualityKey = "videoQuality";
 const screenShareQualityKey = "screenShareQuality";
 const bandwidthConstrainedScreenSharePreferenceKey = "bandwidthConstrainedScreenSharePreference";
+const codecRetryTimesKey = "codecRetryTimes";
 const legacyVideoBandwidthKey = "videoBandwidth";
 const legacyScreenShareBandwidthKey = "screenShareBandwidth";
 const noiseSuppressionEnabledKey = "noiseSuppressionEnabled";
 const noiseSuppressionProviderKey = "noiseSuppressionProvider";
+const noiseSuppressionEngineKey = "noiseSuppressionEngine";
 const microphoneAutoGainControlKey = "microphoneAutoGainControl";
 const microphoneEchoCancellationKey = "microphoneEchoCancellation";
 const microphoneBrowserNoiseSuppressionKey = "microphoneBrowserNoiseSuppression";
@@ -73,6 +77,8 @@ const INITIAL_MAP_EDITOR_SIDEBAR_WIDTH = 448;
 export type VideoQualitySetting = "low" | "recommended" | "high";
 export type BandwidthConstrainedPreference = "maintain-framerate" | "maintain-resolution" | "balanced";
 export type NoiseSuppressionProvider = "workadventure" | "voiceIsolation";
+/** The model behind the "workadventure" provider: DeepFilterNet3 (48 kHz, default) or the legacy DTLN (16 kHz). */
+export type NoiseSuppressionEngine = "deepfilternet" | "dtln";
 
 const JwtAuthToken = z
     .object({
@@ -321,7 +327,7 @@ class LocalUserStore {
         localStorage.setItem(decreaseAudioPlayerVolumeWhileTalking, value.toString());
     }
     getDecreaseAudioPlayerVolumeWhileTalking(): boolean {
-        return localStorage.getItem(decreaseAudioPlayerVolumeWhileTalking) === "true";
+        return localStorage.getItem(decreaseAudioPlayerVolumeWhileTalking) !== "false";
     }
 
     setDisableAnimations(value: boolean): void {
@@ -557,24 +563,26 @@ class LocalUserStore {
         localStorage.setItem(cameraPrivacySettings, option.toString());
     }
 
-    getCameraPrivacySettings() {
-        //if this setting doesn't exist in LocalUserStore, we set a default value
-        if (localStorage.getItem(cameraPrivacySettings) == null) {
-            localStorage.setItem(cameraPrivacySettings, "false");
+    /** Returns the camera privacy setting, or the given default if the user has not stored a preference yet. */
+    getCameraPrivacySettings(defaultCameraPrivacySettings: boolean = false) {
+        const storedValue = localStorage.getItem(cameraPrivacySettings);
+        if (storedValue == null) {
+            return defaultCameraPrivacySettings;
         }
-        return localStorage.getItem(cameraPrivacySettings) === "true";
+        return storedValue === "true";
     }
 
     setMicrophonePrivacySettings(option: boolean) {
         localStorage.setItem(microphonePrivacySettings, option.toString());
     }
 
-    getMicrophonePrivacySettings() {
-        //if this setting doesn't exist in LocalUserStore, we set a default value
-        if (localStorage.getItem(microphonePrivacySettings) == null) {
-            localStorage.setItem(microphonePrivacySettings, "true");
+    /** Returns the microphone privacy setting, or the given default if the user has not stored a preference yet. */
+    getMicrophonePrivacySettings(defaultMicrophonePrivacySettings: boolean = true) {
+        const storedValue = localStorage.getItem(microphonePrivacySettings);
+        if (storedValue == null) {
+            return defaultMicrophonePrivacySettings;
         }
-        return localStorage.getItem(microphonePrivacySettings) === "true";
+        return storedValue === "true";
     }
 
     getAllUserProperties(context: string): Map<string, PlayerVariable> {
@@ -777,6 +785,25 @@ class LocalUserStore {
         return "maintain-resolution";
     }
 
+    // When each video codec the browser called not smooth was last tried again, keyed by direction and codec
+    // ("encode:vp9"), as a timestamp
+    getCodecRetryTimes(): Record<string, number> {
+        try {
+            const raw = localStorage.getItem(codecRetryTimesKey);
+            if (!raw) {
+                return {};
+            }
+            const parsed = z.record(z.number()).safeParse(JSON.parse(raw));
+            return parsed.success ? parsed.data : {};
+        } catch {
+            return {};
+        }
+    }
+
+    setCodecRetryTime(codec: string, time: number): void {
+        localStorage.setItem(codecRetryTimesKey, JSON.stringify({ ...this.getCodecRetryTimes(), [codec]: time }));
+    }
+
     // Background transformation settings
     setBackgroundMode(value: string) {
         localStorage.setItem("backgroundMode", value);
@@ -803,14 +830,6 @@ class LocalUserStore {
         return localStorage.getItem("backgroundImage");
     }
 
-    setBackgroundVideo(value: string) {
-        localStorage.setItem("backgroundVideo", value);
-    }
-
-    getBackgroundVideo(): string | null {
-        return localStorage.getItem("backgroundVideo");
-    }
-
     setNoiseSuppressionEnabled(value: boolean) {
         localStorage.setItem(noiseSuppressionEnabledKey, value.toString());
     }
@@ -821,8 +840,7 @@ class LocalUserStore {
             localStorage.setItem(noiseSuppressionProviderKey, "workadventure");
             return false;
         }
-        // Default to enabled: only an explicit opt-out ("false") turns noise suppression off,
-        // mirroring getMicrophoneBrowserNoiseSuppression() below.
+        // On by default: only an explicit "false" turns it off.
         return localStorage.getItem(noiseSuppressionEnabledKey) !== "false";
     }
 
@@ -836,6 +854,14 @@ class LocalUserStore {
             return value;
         }
         return "workadventure";
+    }
+
+    setNoiseSuppressionEngine(value: NoiseSuppressionEngine) {
+        localStorage.setItem(noiseSuppressionEngineKey, value);
+    }
+
+    getNoiseSuppressionEngine(): NoiseSuppressionEngine {
+        return localStorage.getItem(noiseSuppressionEngineKey) === "dtln" ? "dtln" : "deepfilternet";
     }
 
     setMicrophoneAutoGainControl(value: boolean) {
@@ -941,16 +967,38 @@ class LocalUserStore {
         return localStorage.getItem(matrixDeviceId + "_" + userUuid) ?? "";
     }
 
-    setMatrixLoginToken(value: string | null) {
-        if (value !== null) {
-            localStorage.setItem(matrixLoginToken, value);
+    /** The uuid of the WorkAdventure user who opened the stored Matrix session. */
+    getMatrixSessionOwner(): string | null {
+        return localStorage.getItem(matrixSessionOwner);
+    }
+
+    setMatrixSessionOwner(userUuid: string | null) {
+        if (userUuid !== null) {
+            localStorage.setItem(matrixSessionOwner, userUuid);
         } else {
-            localStorage.removeItem(matrixLoginToken);
+            localStorage.removeItem(matrixSessionOwner);
         }
     }
 
-    getMatrixLoginToken() {
-        return localStorage.getItem(matrixLoginToken);
+    /**
+     * Older versions stored the single-use Matrix login token, which is now exchanged as soon as the page lands with
+     * it and kept in memory only. Drops the one they may have left behind.
+     */
+    removeLegacyMatrixLoginToken() {
+        localStorage.removeItem(matrixLoginToken);
+    }
+
+    /** Whether the Matrix stores (IndexedDB) still hold the data of the Matrix user who used this browser before. */
+    getMatrixStoresNeedClearing(): boolean {
+        return localStorage.getItem(matrixStoresNeedClearing) === "true";
+    }
+
+    setMatrixStoresNeedClearing(value: boolean) {
+        if (value) {
+            localStorage.setItem(matrixStoresNeedClearing, "true");
+        } else {
+            localStorage.removeItem(matrixStoresNeedClearing);
+        }
     }
 
     /**
@@ -963,7 +1011,7 @@ class LocalUserStore {
      * next login overwrites it with the one the homeserver hands out.
      */
     clearMatrixSession() {
-        this.setMatrixLoginToken(null);
+        this.setMatrixSessionOwner(null);
         this.setMatrixUserId(null);
         this.setMatrixAccessToken(null);
         this.setMatrixRefreshToken(null);

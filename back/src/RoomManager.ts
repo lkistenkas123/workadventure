@@ -1,7 +1,6 @@
 import { clearInterval } from "timers";
 import type {
     AdminGlobalMessage,
-    AdminMessage,
     AdminPusherToBackMessage,
     AdminRoomMessage,
     BanMessage,
@@ -16,6 +15,8 @@ import type {
     PusherToBackRoomMessage,
     RefreshRoomPromptMessage,
     RoomsList,
+    WorldUsersAnswer,
+    WorldUsersQuery,
     ServerToAdminClientMessage,
     ServerToClientMessage,
     VariableRequest,
@@ -64,6 +65,7 @@ const roomManager = {
         let user: User | null = null;
         let pongTimeoutId: NodeJS.Timeout | undefined;
         let messageProcessingPromise = Promise.resolve();
+        let closed = false;
         const setRoom = (gameRoom: GameRoom | null) => {
             room = gameRoom;
         };
@@ -72,6 +74,9 @@ const roomManager = {
         };
 
         const handleMessage = async (message: PusherToBackMessage) => {
+            if (closed) {
+                return;
+            }
             if (!message.message) {
                 console.error("Empty message received");
                 Sentry.captureException(`Empty message received ${JSON.stringify(room)}`);
@@ -175,14 +180,6 @@ const roomManager = {
                             room.forwardEditMapCommandMessage(user, message.message.editMapCommandMessage);
                             break;
                         }
-                        case "sendUserMessage": {
-                            socketManager.handleSendUserMessage(user, message.message.sendUserMessage);
-                            break;
-                        }
-                        case "banUserMessage": {
-                            socketManager.handleBanUserMessage(room, user, message.message.banUserMessage);
-                            break;
-                        }
                         case "setPlayerDetailsMessage": {
                             socketManager.handleSetPlayerDetails(room, user, message.message.setPlayerDetailsMessage);
                             break;
@@ -223,6 +220,10 @@ const roomManager = {
                             );
                             break;
                         }
+                        case "entityMessage": {
+                            socketManager.handleEntityMessage(room, message.message.entityMessage);
+                            break;
+                        }
                         default: {
                             const _exhaustiveCheck: never = message.message;
                         }
@@ -254,17 +255,23 @@ const roomManager = {
                 });
         });
 
-        const closeConnection = (reason?: string) => {
-            if (user !== null && room !== null) {
-                socketManager.leaveRoom(room, user);
-            }
-            if (pingIntervalId) {
-                clearInterval(pingIntervalId);
-            }
+        const clearPing = () => {
+            clearInterval(pingIntervalId);
             if (pongTimeoutId) {
                 clearTimeout(pongTimeoutId);
                 pongTimeoutId = undefined;
             }
+        };
+
+        const closeConnection = (reason?: string) => {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            if (user !== null && room !== null) {
+                socketManager.leaveRoom(room, user);
+            }
+            clearPing();
             if (reason !== undefined) {
                 endUserConnectionWithReason(call, reason);
             } else {
@@ -274,9 +281,22 @@ const roomManager = {
             setUser(null);
         };
 
+        // The stream can end while messages are still queued behind a slow async handler (e.g. the last variable
+        // write of a user navigating away). Close only once the queue is drained, or these messages would be dropped.
+        // ponytail: a handler that never settles now keeps the user in the room; add a drain timeout if that shows up.
+        const closeAfterPendingMessages = () => {
+            clearPing();
+            messageProcessingPromise = messageProcessingPromise
+                .finally(() => closeConnection())
+                .catch((e) => {
+                    console.error(e);
+                    Sentry.captureException(e);
+                });
+        };
+
         call.on("end", () => {
             debug("joinRoom ended for user %s", user?.name);
-            closeConnection();
+            closeAfterPendingMessages();
         });
 
         call.on("error", (err: unknown) => {
@@ -285,7 +305,7 @@ const roomManager = {
             Sentry.captureException(err, {
                 user: user ?? undefined,
             });
-            closeConnection();
+            closeAfterPendingMessages();
         });
 
         // Let's set up a ping mechanism
@@ -498,6 +518,7 @@ const roomManager = {
     adminRoom(call: AdminSocket): void {
         const admin = new Admin(call);
         let room: GameRoom | null = null;
+        let joinPromise = Promise.resolve();
 
         call.on("data", (message: AdminPusherToBackMessage) => {
             try {
@@ -509,7 +530,7 @@ const roomManager = {
                 if (room === null) {
                     if (message.message.$case === "subscribeToRoom") {
                         const roomId = message.message.subscribeToRoom;
-                        socketManager
+                        joinPromise = socketManager
                             .handleJoinAdminRoom(admin, roomId)
                             .then((gameRoom: GameRoom) => {
                                 room = gameRoom;
@@ -530,34 +551,25 @@ const roomManager = {
 
         call.on("end", () => {
             debug("joinRoom ended");
-            if (room !== null) {
-                socketManager.leaveAdminRoom(room, admin);
-            }
             call.end();
-            room = null;
+            // Wait for a pending subscription, or the admin would be added to the room after having left it.
+            joinPromise
+                .then(() => {
+                    if (room !== null) {
+                        socketManager.leaveAdminRoom(room, admin);
+                    }
+                    room = null;
+                })
+                .catch((e) => {
+                    console.error(e);
+                    Sentry.captureException(e);
+                });
         });
 
         call.on("error", (err: Error) => {
             console.error("An error occurred in joinAdminRoom stream:", err);
             Sentry.captureException(err);
         });
-    },
-    sendAdminMessage(call: ServerUnaryCall<AdminMessage, Empty>, callback: sendUnaryData<Empty>): void {
-        const adminMessage = call.request;
-        socketManager
-            .sendAdminMessage(
-                adminMessage.roomId,
-                adminMessage.recipientUuid,
-                adminMessage.message,
-                adminMessage.type,
-                adminMessage.id,
-            )
-            .catch((e) => {
-                console.error(e);
-                Sentry.captureException(e);
-            });
-
-        callback(null, {});
     },
     sendGlobalAdminMessage(call: ServerUnaryCall<AdminGlobalMessage, Empty>, callback: sendUnaryData<Empty>): void {
         throw new Error("Not implemented yet");
@@ -566,10 +578,18 @@ const roomManager = {
     },
     ban(call: ServerUnaryCall<BanMessage, Empty>, callback: sendUnaryData<Empty>): void {
         // FIXME Work in progress
-        socketManager.banUser(call.request.roomId, call.request.recipientUuid, call.request.message).catch((e) => {
-            console.error(e);
-            Sentry.captureException(e);
-        });
+        socketManager
+            .banUser(
+                call.request.roomId,
+                call.request.recipientUuid,
+                call.request.message,
+                // The type ends up in the ejected user's client: only let through the two it knows.
+                call.request.type === "kicked" ? "kicked" : "banned",
+            )
+            .catch((e) => {
+                console.error(e);
+                Sentry.captureException(e);
+            });
 
         callback(null, {});
     },
@@ -605,6 +625,9 @@ const roomManager = {
     },
     getRooms(call: ServerUnaryCall<Empty, Empty>, callback: sendUnaryData<RoomsList>): void {
         callback(null, socketManager.getAllRooms());
+    },
+    getWorldUsers(call: ServerUnaryCall<WorldUsersQuery, Empty>, callback: sendUnaryData<WorldUsersAnswer>): void {
+        callback(null, socketManager.getWorldUsers(call.request.world));
     },
     ping(call: ServerUnaryCall<PingMessage, Empty>, callback: sendUnaryData<PingMessage>): void {
         callback(null, call.request);

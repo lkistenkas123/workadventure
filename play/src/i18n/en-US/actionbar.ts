@@ -11,16 +11,14 @@ const actionbar: BaseTranslation = {
     participantSendMessage: "Send a message",
     participantInviteUser: "Invite a user",
     participantExitFullscreen: "Exit fullscreen",
+    participantShowList: "Show participant list",
+    participantHideList: "Hide participant list",
     profil: "Edit your name",
-    startScreenSharing: "Start screen sharing",
-    stopScreenSharing: "Stop screen sharing",
-    screenSharingMode: "Screen sharing mode",
     calendar: "Calendar",
     todoList: "Todo list",
     woka: "Customize your avatar",
     companion: "Add companion",
     //megaphone: "Use megaphone",
-    test: "Test my settings",
     editCamMic: "Edit cam / mic",
     allSettings: "All settings",
     installPwa: "Install Web App",
@@ -32,32 +30,28 @@ const actionbar: BaseTranslation = {
     camera: {
         disabled: "Your camera is disabled",
         activate: "Activate your camera",
-        noDevices: "No camera device found",
-        setBackground: "Set background",
-        blurEffects: "Blur effects",
-        disableBackgroundEffects: "Disable background effects",
-        close: "Close",
     },
     microphone: {
         disabled: "Your microphone is disabled",
         activate: "Activate your microphone",
-        noDevices: "No microphone device found",
         noSoundWarning:
             "No sound detected from your microphone. There may be a problem; try changing your microphone in settings.",
-        noSoundWarningPressEnter: "No sound detected from your microphone. Press Enter to open settings.",
         advancedNoiseReduction: "Advanced noise reduction",
+        loudEnvironmentWarning: "Sustained background noise was detected on your microphone.",
+        enableNoiseSuppression: "Enable noise suppression",
         noiseSuppressionInitializing: "Initializing custom noise suppression...",
         noiseSuppressionUnsupported: "This browser cannot run custom noise suppression.",
         noiseSuppressionError: "Custom noise suppression failed. Falling back to browser native noise suppression.",
+        noiseSuppressionActive: "Active",
         openSettings: "Open settings",
         ignore: "Ignore",
     },
     speaker: {
         disabled: "Your speaker is disabled",
-        activate: "Activate your speaker",
+        test: "Test audio output",
         noDevices: "No speaker device found",
         noDevicesDesc:
-            "Your browser does not list any selectable audio output. Some browsers limit this (for example Safari). Try another browser, reconnect headphones or speakers, check your system sound settings and your computer's configuration (privacy, devices).",
+            "Your browser does not list any selectable audio output. Some browsers limit this. Try another browser, reconnect headphones or speakers, check your system sound settings and your computer's configuration (privacy, devices).",
     },
     status: {
         ONLINE: "Online",
@@ -89,7 +83,6 @@ const actionbar: BaseTranslation = {
         blurMiddle: "Middle blur",
         blurHigh: "High blur",
         images: "Images",
-        videos: "Videos",
     },
     help: {
         chat: {
@@ -103,6 +96,10 @@ const actionbar: BaseTranslation = {
         emoji: {
             title: "Display an emoji",
             desc: "Express how you feel with just one click using emoji reactions. Just tap and go!",
+        },
+        raiseHand: {
+            title: "Raise your hand",
+            desc: "Signal that you want to speak. Your raised hand is shown on the map and on your video, so everyone knows whose turn is next.",
         },
         audioManager: {
             title: "Ambient sounds volume",
@@ -130,6 +127,10 @@ const actionbar: BaseTranslation = {
             bubbleLabel: "Discussion bubble",
             unnamedArea: "Unnamed Area",
         },
+        giveBackFloor: {
+            title: "Give back the floor",
+            desc: "You were given the floor. Click to stop speaking and hand it back.",
+        },
         megaphone: {
             title: "Stop megaphone",
             desc: "Stop broadcasting your message to all users.",
@@ -152,7 +153,7 @@ const actionbar: BaseTranslation = {
         },
         share: {
             title: "Share your screen",
-            desc: "Want to share your screen with other users? You can! You can show your screen to everyone in the chat, and you can choose to share your entire screen or just a specific window.",
+            desc: "Want to share your screen with other users? You can! You can show your screen to the people in your bubble or meeting room, and you can choose to share your entire screen or just a specific window.",
         },
         apps: {
             title: "Third party applications",
@@ -162,21 +163,19 @@ const actionbar: BaseTranslation = {
             title: "Room list",
             desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
         },
-        calendar: {
-            title: "Calendar",
-            desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-        },
-        todolist: {
-            title: "Todolist",
-            desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-        },
         pictureInPicture: {
             title: "Picture in picture",
-            descDisabled:
-                "Unfortunately, this feature is not available on your device ❌. Please try using another device or browser, like Chrome or Edge, to access this feature.",
-            desc: "You can use the picture in picture feature to watch a video or a presentation while you are in a conversation. Just click on the picture in picture icon and enjoy your content.",
+            desc: "Shows the videos of your conversation in a small floating window, so you can keep seeing the people you talk to while you work in another tab or app.",
         },
         videoNotSupported: "Your browser does not support the video tag.",
+    },
+    raisedHands: {
+        speaking: "Speaking",
+        title: "Raised hands",
+        empty: "No one has raised their hand",
+        help: "See who raised their hand, in order, and give them the floor.",
+        lowerHand: "Lower hand",
+        lowerAllHands: "Lower all",
     },
     listStatusTitle: {
         enable: "Change your status",

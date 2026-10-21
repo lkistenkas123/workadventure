@@ -10,10 +10,17 @@ class Menu {
         await expect(page.locator("#chat.chatWindow")).toBeVisible();
     }
 
+    // The "Map editor" menu entry is a toggle, and the old assertion (the sub-menu closing) was true in both
+    // directions — so calling this while the editor was already open silently closed it, and the next click on
+    // the side bar raced its exit animation. Guard on the side bar instead, and assert it is really there.
     async openMapEditor(page: Page) {
-        await page.getByTestId("map-menu").click({ timeout: 30_000 });
-        await page.getByRole("button", { name: "Map editor" }).click();
-        await expect(page.getByRole("button", { name: "Map editor" })).toBeHidden();
+        const mapEditorSideBar = page.locator("section.side-bar-container .side-bar");
+        if (!(await mapEditorSideBar.isVisible())) {
+            await page.getByTestId("map-menu").click({ timeout: 30_000 });
+            await page.getByRole("button", { name: "Map editor" }).click();
+            await expect(page.getByRole("button", { name: "Map editor" })).toBeHidden();
+        }
+        await expect(mapEditorSideBar).toBeVisible();
     }
 
     async openMapExplorer(page: Page) {
@@ -92,6 +99,9 @@ class Menu {
         //await page.locator('.map-editor .configure-my-room .close-window').click();
         await page.getByTestId("closeMapEditorButton").click();
         await expect(page.locator("#map-editor-container .configure-my-room .close-window")).toBeHidden();
+        // Wait for the side bar to actually leave (it plays an exit animation), so that a later openMapEditor
+        // does not mistake the fading side bar for an already-open editor.
+        await expect(page.locator("section.side-bar-container .side-bar")).toBeHidden();
     }
 
     async clickSendGlobalMessage(page: Page) {
@@ -161,7 +171,7 @@ class Menu {
         if (!microphoneButtonClass.includes("bg-danger")) return;
 
         await page.getByTestId("microphone-button").click();
-        await expect(page.getByTestId("microphone-button").locator(".bg-danger")).toBeVisible();
+        await this.expectButtonState(page, "microphone-button", "normal");
     }
     async turnOffMicrophone(page: Page) {
         // If the microphone is already off, do nothing
@@ -171,7 +181,7 @@ class Menu {
         if (microphoneButtonClass.includes("bg-danger")) return;
 
         await page.getByTestId("microphone-button").click();
-        await expect(page.getByTestId("microphone-button").locator(".bg-danger")).toBeHidden();
+        await this.expectButtonState(page, "microphone-button", "forbidden");
     }
 
     async expectCameraOn(page: Page) {
@@ -222,8 +232,12 @@ class Menu {
         }
     }
 
-    async expectStatus(page: Page, status: string) {
-        await expect(page.getByText(status).first()).toBeVisible();
+    // Needs the profile menu open. Every status row has a check icon, transparent on all rows but the
+    // selected one, so asserting that an icon is visible says nothing.
+    async expectSelectedStatus(page: Page, status: string) {
+        const checkIcon = page.locator(".status-button", { hasText: status }).locator("svg");
+        await expect(checkIcon).toBeVisible();
+        await expect(checkIcon).not.toHaveClass(/\bopacity-0\b/);
     }
 
     async closeNotificationPopUp(page: Page) {
@@ -231,14 +245,25 @@ class Menu {
         await page.getByRole("button", { name: "Continue without notification" }).click();
         await expect(page.getByRole("button", { name: "Continue without notification" })).toBeVisible();
     }
+    // Choosing Busy asks "Allow notifications?" unless the browser already allows them: the chromium
+    // project grants the permission, the other projects do not.
+    async closeAllowNotificationsPopUpIfAsked(page: Page) {
+        if (await page.evaluate(() => !("Notification" in window) || Notification.permission === "granted")) return;
+        await page
+            .locator(".popup-container", { has: page.locator("#notificationPermission") })
+            .getByRole("button", { name: "Close" })
+            .click();
+    }
     async closeCameraPopUp(page: Page) {
         if (await page.getByRole("button", { name: "Continue without webcam" }).isHidden()) return;
         await page.getByRole("button", { name: "Continue without webcam" }).click();
         await expect(page.getByRole("button", { name: "Continue without webcam" })).toBeVisible();
     }
 
+    // Closes the "Configure my room" panel only — the map editor itself stays open.
     async closeMapEditorConfigureMyRoomPopUp(page: Page) {
         await page.locator(".configure-my-room button.close-window").first().click();
+        await expect(page.locator(".configure-my-room")).toBeHidden();
     }
 
     async openEmoji(page: Page) {

@@ -12,16 +12,14 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
     participantSendMessage: "ส่งข้อความ",
     participantInviteUser: "เชิญผู้ใช้",
     participantExitFullscreen: "ออกจากโหมดเต็มหน้าจอ",
+    participantShowList: "แสดงรายชื่อผู้เข้าร่วม",
+    participantHideList: "ซ่อนรายชื่อผู้เข้าร่วม",
     profil: "แก้ไขชื่อของคุณ",
-    startScreenSharing: "เริ่มแชร์หน้าจอ",
-    stopScreenSharing: "หยุดแชร์หน้าจอ",
-    screenSharingMode: "โหมดแชร์หน้าจอ",
     calendar: "ปฏิทิน",
     todoList: "รายการสิ่งที่ต้องทำ",
     woka: "ปรับแต่งอวาตาร์ของคุณ",
     companion: "เพิ่มเพื่อนคู่หู",
     //megaphone: "Use megaphone",
-    test: "ทดสอบการตั้งค่าของฉัน",
     editCamMic: "แก้ไขกล้อง / ไมค์",
     allSettings: "การตั้งค่าทั้งหมด",
     installPwa: "ติดตั้งเว็บแอป",
@@ -33,31 +31,27 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
     camera: {
         disabled: "กล้องของคุณถูกปิดอยู่",
         activate: "เปิดกล้องของคุณ",
-        noDevices: "ไม่พบอุปกรณ์กล้อง",
-        setBackground: "ตั้งค่าพื้นหลัง",
-        blurEffects: "เอฟเฟกต์เบลอ",
-        disableBackgroundEffects: "ปิดเอฟเฟกต์พื้นหลัง",
-        close: "ปิด",
     },
     microphone: {
         disabled: "ไมโครโฟนของคุณถูกปิดอยู่",
         activate: "เปิดไมโครโฟนของคุณ",
-        noDevices: "ไม่พบอุปกรณ์ไมโครโฟน",
         noSoundWarning: "ไม่พบเสียงจากไมโครโฟนของคุณ อาจมีปัญหา ลองเปลี่ยนไมโครโฟนในการตั้งค่า",
-        noSoundWarningPressEnter: "ไม่พบเสียงจากไมโครโฟนของคุณ กด Enter เพื่อเปิดการตั้งค่า",
         advancedNoiseReduction: "การลดเสียงรบกวนขั้นสูง",
+        loudEnvironmentWarning: "ตรวจพบเสียงรบกวนพื้นหลังต่อเนื่องจากไมโครโฟนของคุณ",
+        enableNoiseSuppression: "เปิดการลดเสียงรบกวน",
         noiseSuppressionInitializing: "กำลังเริ่มต้นระบบตัดเสียงรบกวนแบบกำหนดเอง...",
         noiseSuppressionUnsupported: "เบราว์เซอร์นี้ไม่สามารถใช้ระบบตัดเสียงรบกวนแบบกำหนดเองได้",
         noiseSuppressionError: "ระบบตัดเสียงรบกวนแบบกำหนดเองล้มเหลว กำลังกลับไปใช้ระบบตัดเสียงรบกวนของเบราว์เซอร์",
+        noiseSuppressionActive: "ทำงานอยู่",
         openSettings: "เปิดการตั้งค่า",
         ignore: "ไม่สนใจ",
     },
     speaker: {
         disabled: "ลำโพงของคุณถูกปิดอยู่",
-        activate: "เปิดลำโพงของคุณ",
+        test: "ทดสอบเอาต์พุตเสียง",
         noDevices: "ไม่พบอุปกรณ์ลำโพง",
         noDevicesDesc:
-            "เบราว์เซอร์ของคุณไม่แสดงรายการเอาต์พุตเสียงที่เลือกได้ เบราว์เซอร์บางตัวจำกัดความสามารถนี้ (เช่น Safari) ลองใช้เบราว์เซอร์อื่น เชื่อมต่อหูฟังหรือลำโพงใหม่ ตรวจสอบการตั้งค่าเสียงของระบบและการกำหนดค่าคอมพิวเตอร์ของคุณ (ความเป็นส่วนตัว อุปกรณ์)",
+            "เบราว์เซอร์ของคุณไม่แสดงรายการเอาต์พุตเสียงที่เลือกได้ เบราว์เซอร์บางตัวจำกัดความสามารถนี้ ลองใช้เบราว์เซอร์อื่น เชื่อมต่อหูฟังหรือลำโพงใหม่ ตรวจสอบการตั้งค่าเสียงของระบบและการกำหนดค่าคอมพิวเตอร์ของคุณ (ความเป็นส่วนตัว อุปกรณ์)",
     },
     status: {
         ONLINE: "ออนไลน์",
@@ -89,7 +83,6 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         blurMiddle: "เบลอปานกลาง",
         blurHigh: "เบลอมาก",
         images: "ภาพ",
-        videos: "วิดีโอ",
     },
     help: {
         chat: {
@@ -103,6 +96,10 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         emoji: {
             title: "แสดงอีโมจิ",
             desc: "แสดงความรู้สึกของคุณด้วยอีโมจิเพียงคลิกเดียว แค่แตะแล้วไปต่อได้เลย!",
+        },
+        raiseHand: {
+            title: "ยกมือ",
+            desc: "ส่งสัญญาณว่าคุณต้องการพูด มือที่ยกขึ้นของคุณจะแสดงบนแผนที่และบนวิดีโอของคุณ เพื่อให้ทุกคนรู้ว่าถึงตาใครต่อไป",
         },
         audioManager: {
             title: "ระดับเสียงแวดล้อม",
@@ -130,6 +127,10 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
             bubbleLabel: "บับเบิลสนทนา",
             unnamedArea: "พื้นที่ไม่มีชื่อ",
         },
+        giveBackFloor: {
+            title: "คืนสิทธิ์การพูด",
+            desc: "คุณได้รับสิทธิ์ให้พูด คลิกเพื่อหยุดพูดและคืนสิทธิ์",
+        },
         megaphone: {
             title: "หยุดเมกะโฟน",
             desc: "หยุดกระจายข้อความของคุณไปยังผู้ใช้ทุกคน",
@@ -152,7 +153,7 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         },
         share: {
             title: "แชร์หน้าจอของคุณ",
-            desc: "อยากแชร์หน้าจอให้ผู้ใช้คนอื่นดูไหม? ทำได้เลย! คุณสามารถแสดงหน้าจอให้ทุกคนในการสนทนา และเลือกได้ว่าจะแชร์ทั้งหน้าจอหรือเฉพาะหน้าต่างใดหน้าต่างหนึ่ง",
+            desc: "อยากแชร์หน้าจอให้ผู้ใช้คนอื่นดูไหม? ทำได้เลย! คุณสามารถแสดงหน้าจอให้คนในบับเบิลหรือห้องประชุมของคุณดู และเลือกได้ว่าจะแชร์ทั้งหน้าจอหรือเฉพาะหน้าต่างใดหน้าต่างหนึ่ง",
         },
         apps: {
             title: "แอปพลิเคชันภายนอก",
@@ -162,21 +163,19 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
             title: "รายการห้อง",
             desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
         },
-        calendar: {
-            title: "ปฏิทิน",
-            desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-        },
-        todolist: {
-            title: "รายการสิ่งที่ต้องทำ",
-            desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-        },
         pictureInPicture: {
             title: "ภาพซ้อนภาพ",
-            descDisabled:
-                "ขออภัย ฟีเจอร์นี้ไม่พร้อมใช้งานบนอุปกรณ์ของคุณ ❌ กรุณาลองใช้อุปกรณ์หรือเบราว์เซอร์อื่น เช่น Chrome หรือ Edge เพื่อใช้ฟีเจอร์นี้",
-            desc: "คุณสามารถใช้ฟีเจอร์ภาพซ้อนภาพเพื่อดูวิดีโอหรือการนำเสนอไปพร้อมกับการสนทนาได้ เพียงคลิกที่ไอคอนภาพซ้อนภาพแล้วเพลิดเพลินกับเนื้อหาของคุณ",
+            desc: "แสดงวิดีโอของการสนทนาในหน้าต่างลอยขนาดเล็ก เพื่อให้คุณยังเห็นคนที่คุณคุยด้วยขณะทำงานในแท็บหรือแอปอื่น",
         },
         videoNotSupported: "เบราว์เซอร์ของคุณไม่รองรับแท็กวิดีโอ",
+    },
+    raisedHands: {
+        speaking: "กำลังพูด",
+        title: "มือที่ยกขึ้น",
+        empty: "ยังไม่มีใครยกมือ",
+        help: "ดูว่าใครยกมือบ้างตามลำดับ และให้สิทธิ์การพูดแก่พวกเขา",
+        lowerHand: "ลดมือลง",
+        lowerAllHands: "ลดทั้งหมด",
     },
     listStatusTitle: {
         enable: "เปลี่ยนสถานะของคุณ",

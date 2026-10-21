@@ -4,11 +4,7 @@
 
     import PictureInPictureIcon from "../../Icons/PictureInPictureIcon.svelte";
     import PictureInPictureOffIcon from "../../Icons/PictureInPictureOffIcon.svelte";
-    import {
-        activePictureInPictureStore,
-        askPictureInPictureActivatingStore,
-        pictureInPictureSupportedStore,
-    } from "../../../Stores/PeerStore";
+    import { activePictureInPictureStore, askPictureInPictureActivatingStore } from "../../../Stores/PeerStore";
     import { localUserStore } from "../../../Connection/LocalUserStore";
     import { LL } from "../../../../i18n/i18n-svelte";
     import { analyticsClient } from "../../../Administration/AnalyticsClient";
@@ -21,7 +17,9 @@
 
     function pictureInPictureClick() {
         // Analytics
-        analyticsClient.clickPictureInPicture(!$askPictureInPictureActivatingStore);
+        analyticsClient.trackAdminEvent("meeting.picture_in_picture.toggled", {
+            open: !$askPictureInPictureActivatingStore,
+        });
 
         // Create request to the navigateur to enter picture in picture mode
         onclick?.();
@@ -38,12 +36,10 @@
 <ActionBarButton
     classList="group/btn-picture-in-picture"
     disabledHelp={$openedMenuStore !== undefined}
-    state={$pictureInPictureSupportedStore ? ($activePictureInPictureStore ? "active" : "normal") : "disabled"}
-    dataTestId={$pictureInPictureSupportedStore ? "pictureInPictureButton" : "pictureInPictureButtonDisabled"}
+    state={$activePictureInPictureStore ? "active" : "normal"}
+    dataTestId="pictureInPictureButton"
     tooltipTitle={$LL.actionbar.help.pictureInPicture.title()}
-    desc={$pictureInPictureSupportedStore
-        ? $LL.actionbar.help.pictureInPicture.desc()
-        : $LL.actionbar.help.pictureInPicture.descDisabled()}
+    desc={$LL.actionbar.help.pictureInPicture.desc()}
     media="./static/Videos/PictureInPicture.mp4"
     onclick={pictureInPictureClick}
 >

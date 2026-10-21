@@ -87,6 +87,9 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
             volumeLabel: "Volume",
             error: "Impossible de charger le son",
             actionButtonLabel: "Jouer de la musique",
+            playForAllUsersLabel: "Jouer pour tous les utilisateurs de la carte",
+            audibleRadiusLabel: "Rayon d'audibilité (en pixels)",
+            audibleRadiusPlaceholder: "Audible partout si vide",
         },
         openWebsite: {
             label: "Ouvrir un lien",
@@ -141,6 +144,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
         },
         chatEnabled: "Chat activé",
         allowTalking: "Autoriser la parole et la formation de bulles",
+        raiseHandEnabled: "Autoriser la levée de main",
         seeAttendees: "Voir les participants",
         start: {
             label: "Zone de départ",
@@ -311,6 +315,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 startWithAudioMuted: "Démarrer avec le microphone désactivé",
                 startWithVideoMuted: "Démarrer avec la vidéo désactivée",
                 disableChat: "Désactiver le chat",
+                raiseHandEnabled: "Autoriser la levée de main",
                 livekitRoomAdminTag: "Tag modérateur de la salle de réunion",
                 cancel: "Annuler",
                 validate: "Valider",
@@ -460,7 +465,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 audienceVideoFeedbackActivated: "Mode auditorium activé",
                 audienceVideoFeedbackActivatedDisabled: "Mode auditorium désactivé",
                 audienceVideoFeedbackActivatedHelper:
-                    "Mode auditorium activé : Recevez le flux caméra et microphone de tous les utilisateurs (avec caméra et microphone activés) dans la salle/monde. Mais le participant ne pourra pas voir les autres participants. Désactivé par défaut.",
+                    "Mode auditorium activé : Recevez le flux caméra de tous les utilisateurs (avec caméra activée) dans la salle/monde, sans leur son. Mais le participant ne pourra pas voir les autres participants. Désactivé par défaut.",
                 error: {
                     title: "Veuillez entrer un nom",
                     save: {

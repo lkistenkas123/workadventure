@@ -68,30 +68,16 @@ describe("areCharacterTextureValid()", () => {
 
 describe("localUserStore microphone noise suppression settings", () => {
     beforeEach(() => {
-        // `localStorage` is an empty object in this test environment rather than a real Storage,
-        // so install a minimal working implementation instead of calling localStorage.clear().
-        const store = new Map<string, string>();
-        vi.stubGlobal("localStorage", {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => {
-                store.set(key, value);
-            },
-            removeItem: (key: string) => {
-                store.delete(key);
-            },
-            clear: () => {
-                store.clear();
-            },
-        });
+        localStorage.clear();
     });
 
-    it("enables WorkAdventure noise suppression by default", () => {
+    it("turns advanced noise suppression and browser noise suppression on by default", () => {
         expect(localUserStore.getNoiseSuppressionEnabled()).toBe(true);
         expect(localUserStore.getNoiseSuppressionProvider()).toBe("workadventure");
         expect(localUserStore.getMicrophoneBrowserNoiseSuppression()).toBe(true);
     });
 
-    it("keeps noise suppression off for users who explicitly disabled it", () => {
+    it("keeps advanced noise suppression off when explicitly disabled", () => {
         localUserStore.setNoiseSuppressionEnabled(false);
 
         expect(localUserStore.getNoiseSuppressionEnabled()).toBe(false);

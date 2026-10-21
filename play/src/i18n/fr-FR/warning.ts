@@ -7,11 +7,9 @@ const warning: DeepPartial<Translation["warning"]> = {
     limit: "Ce monde est proche de ses limites !",
     accessDenied: {
         camera: "Accès à la caméra refusé. Cliquez ici et vérifiez les autorisations de votre navigateur.",
-        screenSharing: "Partage d'écran refusé. Cliquez ici et vérifiez les autorisations de votre navigateur.",
         teleport: "Vous n'avez pas le droit de vous téléporter vers cet utilisateur.",
         room: "Accès à la pièce refusé. Vous n'avez pas les autorisations nécessaires pour entrer dans cette pièce.",
     },
-    importantMessage: "Message important",
     connectionLost: "Connexion perdue. Reconnexion...",
     connectionLostTitle: "Connexion perdue",
     connectionLostSubtitle: "Reconnexion",
@@ -27,6 +25,7 @@ const warning: DeepPartial<Translation["warning"]> = {
     },
     backgroundProcessing: {
         failedToApply: "Échec de l'application des effets de fond",
+        notSupportedOnThisBrowser: "Les effets de fond ne sont pas pris en charge par ce navigateur",
     },
     duplicateUserConnected: {
         title: "Déjà connecté",

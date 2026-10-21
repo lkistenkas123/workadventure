@@ -6,11 +6,9 @@ const warning: BaseTranslation = {
     limit: "This world is close to its limit!",
     accessDenied: {
         camera: "Camera access denied. Click here and check your browser permissions.",
-        screenSharing: "Screen sharing denied. Click here and check your browser permissions.",
         teleport: "You have no right to teleport to this user.",
         room: "Room access denied. You are not allowed to enter this room.",
     },
-    importantMessage: "Important message",
     connectionLost: "Connection lost. Reconnecting...",
     connectionLostTitle: "Connection lost",
     connectionLostSubtitle: "Reconnecting",
@@ -26,6 +24,7 @@ const warning: BaseTranslation = {
     },
     backgroundProcessing: {
         failedToApply: "Failed to apply background effects",
+        notSupportedOnThisBrowser: "Background effects are not supported on this browser",
     },
     duplicateUserConnected: {
         title: "Already connected",

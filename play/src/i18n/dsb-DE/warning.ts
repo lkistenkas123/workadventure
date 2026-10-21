@@ -7,11 +7,9 @@ const warning: DeepPartial<Translation["warning"]> = {
     limit: "Ten swět dosegnjo skóro swóju maksimalnu kapacitu!",
     accessDenied: {
         camera: "Pśistup ku kamerje njejo zwólony. Klikni how, aby  nastajenja browsera kontrolěrował.",
-        screenSharing: "Pśenosowanje wobrazowki njejo zwólone. Klikni how, aby nastajenja browsera kontrolěrował.",
         room: "Pśistup zakazany. Njamaš pšawa, aby stupił do teje śpy.",
         teleport: "Wy njesmějośo se teleportěrowaś k tomu wužywarjeju.",
     },
-    importantMessage: "Wažna powěsć",
     connectionLost: "Zwězanje jo pśetergnjone. Zwězanje naspjet startowaś...",
     connectionLostTitle: "Zwězanja su pśetergnjone",
     connectionLostSubtitle: "Zwězanje naspjet startowaś...",
@@ -22,6 +20,7 @@ const warning: DeepPartial<Translation["warning"]> = {
     mapEditorNotEnabled: "Editor kórtow njejo na toś tom swěśe zmóžnjony.",
     backgroundProcessing: {
         failedToApply: "Zastosowanje pozadkowych efektow jo se njeraźiło",
+        notSupportedOnThisBrowser: "Pozadkowe efekty njejsu w toś tom wobglědowaku pódpěrane",
     },
     popupBlocked: {
         title: "Pop-up-bloker",

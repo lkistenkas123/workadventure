@@ -14,6 +14,7 @@ import type {
 } from "matrix-js-sdk";
 import {
     ClientEvent,
+    ConnectionError,
     EventTimeline,
     EventType,
     HttpApiEvent,
@@ -103,6 +104,7 @@ export class MatrixChatConnection implements ChatConnectionInterface, MatrixChat
     private displayNameMatrixSyncUnsubscriber: (() => void) | undefined;
     private displayNameMatrixSyncDebounceTimer: ReturnType<typeof setTimeout> | undefined;
     private isClientReady = false;
+    private isSessionLoggedOut = false;
     // Per-user availability store, shared with the rendered ChatUser and kept live by
     // onUserPresenceEvent. Persistent across directRoomsUsers recomputes so the UI subscription survives.
     private readonly userAvailabilityStores = new Map<string, Writable<AvailabilityStatus>>();
@@ -485,6 +487,12 @@ export class MatrixChatConnection implements ChatConnectionInterface, MatrixChat
         this.client.getVisibleRooms().forEach((room) => this.updateRawUnreadRoom(room));
     }
 
+    private getDirectRoomIdsFor(userID: string): Set<string> {
+        const directRoomsPerUsers = this.client?.getAccountData(EventType.Direct)?.getContent() ?? {};
+        const roomIds: unknown = directRoomsPerUsers[userID];
+        return new Set(Array.isArray(roomIds) ? (roomIds as string[]) : []);
+    }
+
     private getDirectRoomIds(): Set<string> {
         const directRoomsPerUsers = this.client?.getAccountData(EventType.Direct)?.getContent() ?? {};
         return new Set(Object.values(directRoomsPerUsers).flat() as string[]);
@@ -578,7 +586,10 @@ export class MatrixChatConnection implements ChatConnectionInterface, MatrixChat
                 });
             }
             this.rebuildSpaceHierarchy();
-            await this.syncMatrixGlobalProfileFromLocalWokaAndName(false);
+            // Best effort, like the later syncs below: a failed avatar upload (or crypto.subtle, which hashes the
+            // Woka, missing on a non-secure origin) is already logged and reported, and must not take the whole
+            // chat down with it. Whether the Woka is there yet when the init gets here is only a matter of timing.
+            await this.syncMatrixGlobalProfileFromLocalWokaAndName(false).catch(() => undefined);
             this.attachWokaAvatarMatrixSync();
             this.attachDisplayNameMatrixSync();
         } catch (error) {
@@ -783,7 +794,11 @@ export class MatrixChatConnection implements ChatConnectionInterface, MatrixChat
                 this.connectionStatus.set("ON_ERROR");
                 if (res?.error) {
                     console.error("Matrix sync error (previous state: ", prevState, "): ", res?.error);
-                    Sentry.captureException(res?.error);
+                    // A ConnectionError means the homeserver could not be reached (network down, laptop waking up...).
+                    // The SDK keeps polling /versions every few seconds and resumes the sync once it answers.
+                    if (!(res.error instanceof ConnectionError)) {
+                        Sentry.captureException(res.error);
+                    }
                 }
                 break;
             case SyncState.Reconnecting:
@@ -862,6 +877,7 @@ export class MatrixChatConnection implements ChatConnectionInterface, MatrixChat
      * the only place a fresh Matrix login token is minted.
      */
     private onSessionLoggedOut(error: MatrixError): void {
+        this.isSessionLoggedOut = true;
         console.error("The Matrix session is no longer valid: ", error);
         Sentry.captureException(error);
         localUserStore.clearMatrixSession();
@@ -926,6 +942,9 @@ export class MatrixChatConnection implements ChatConnectionInterface, MatrixChat
             const checkSync = () => {
                 if (this.client?.isInitialSyncComplete()) {
                     resolve();
+                } else if (this.isSessionLoggedOut) {
+                    // A dead session never syncs: don't keep the chat (and its button) waiting for the timeout.
+                    reject(new Error("Failed to wait initial sync : the Matrix session is no longer valid"));
                 } else {
                     if (Date.now() - startTime >= timeout) {
                         reject(new Error(`Failed to wait initial sync : timeout ${timeout} ms`));
@@ -1911,11 +1930,21 @@ export class MatrixChatConnection implements ChatConnectionInterface, MatrixChat
         // reconciliation, so it can miss a DM the client already knows about — every miss here
         // forks a duplicate room. Same heuristic as Element's findDMForUser: a DM is a room of
         // exactly two active people containing those two people.
-        const suitableRooms = this.client.getRooms().filter((room) => {
+        const candidateRooms = this.client.getRooms().filter((room) => {
             if (room.isSpaceRoom() || !isActiveMembership(room.getMyMembership())) return false;
-            const activeMembers = room.getMembers().filter((member) => isActiveMembership(member.membership));
-            return activeMembers.length === 2 && activeMembers.some((member) => member.userId === userID);
+            // Counts come from the room summary, not from `getMembers().length`: under lazy loading the
+            // latter only holds the member events that happen to be loaded (the heroes and the recent
+            // senders), so a crowded room whose two loaded members are the two of us would be picked as
+            // our DM. Same reasoning as MatrixChatRoom.getMatrixRoomType.
+            if (room.getJoinedMemberCount() + room.getInvitedMemberCount() !== 2) return false;
+            return isActiveMembership(room.getMember(userID)?.membership);
         });
+
+        // A room flagged as a DM with that user wins over a room that merely ended up with two people:
+        // a group chat everybody else left still counts two active members but is not our DM.
+        const directRoomIds = this.getDirectRoomIdsFor(userID);
+        const flaggedRooms = candidateRooms.filter((room) => directRoomIds.has(room.roomId));
+        const suitableRooms = flaggedRooms.length > 0 ? flaggedRooms : candidateRooms;
 
         // Duplicate DMs already exist for some users: pick the most recently active one
         // (the sidebar sort criterion) instead of an arbitrary insertion order.
@@ -2076,9 +2105,22 @@ export class MatrixChatConnection implements ChatConnectionInterface, MatrixChat
     }
 
     async isUserExist(address: string): Promise<boolean> {
-        const user = await this.searchChatUsers(address, 1);
-        if (!user) return false;
-        return user && user.some((user) => user.id === address);
+        if (!this.client) {
+            throw new Error(CLIENT_NOT_INITIALIZED_ERROR_MSG);
+        }
+        // The user directory cannot answer this: it only lists users we already share a room with (or who
+        // are in a public room), it is indexed asynchronously, and it matches on words, so searching for a
+        // full "@someone:my.server" happily returns anybody else on the same server. The profile endpoint
+        // answers about that exact user: 404 means there is no such user.
+        try {
+            await this.client.getProfileInfo(address);
+            return true;
+        } catch (error) {
+            if (error instanceof MatrixError && error.httpStatus === 404) {
+                return false;
+            }
+            throw error;
+        }
     }
 
     getRoomByID(roomId: string): ChatRoom {

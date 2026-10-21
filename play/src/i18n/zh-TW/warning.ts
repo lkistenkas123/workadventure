@@ -7,11 +7,9 @@ const warning: DeepPartial<Translation["warning"]> = {
     limit: "該世界已接近容量上限！",
     accessDenied: {
         camera: "攝影機存取權限被拒絕。點選這裡檢查你的瀏覽器權限。",
-        screenSharing: "螢幕分享權限被拒絕。點選這裡檢查你的瀏覽器權限。",
         teleport: "您無權傳送至此使用者。",
         room: "房間存取被拒絕。你不能進入這個房間",
     },
-    importantMessage: "重要訊息",
     connectionLost: "連線中斷。重新連線中...",
     connectionLostTitle: "連線中斷。",
     connectionLostSubtitle: "重新連線中",
@@ -22,6 +20,7 @@ const warning: DeepPartial<Translation["warning"]> = {
     mapEditorNotEnabled: "地圖編輯器在此世界中未啟用。",
     backgroundProcessing: {
         failedToApply: "套用背景效果失敗",
+        notSupportedOnThisBrowser: "此瀏覽器不支援背景效果",
     },
     popupBlocked: {
         title: "彈出視窗被封鎖",

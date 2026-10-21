@@ -1,6 +1,6 @@
 import fs from "fs";
 import { v4 } from "uuid";
-import type { MeResponse, RegisterData } from "@workadventure/messages";
+import type { MeResponse } from "@workadventure/messages";
 import { MeRequest } from "@workadventure/messages";
 import { z } from "zod";
 import { errors } from "jose";
@@ -65,7 +65,6 @@ export class AuthenticateController extends BaseHttpController {
         this.openIDCallback();
         this.matrixCallback();
         this.logoutCallback();
-        this.register();
         this.anonymLogin();
         this.profileCallback();
         this.logoutUser();
@@ -197,17 +196,31 @@ export class AuthenticateController extends BaseHttpController {
             try {
                 const authTokenData: AuthTokenData = await jwtTokenManager.verifyJWTToken(token, false);
 
+                // Check the OpenID access token (renewing it if expired) before calling the admin, which uses it to
+                // identify the member
+                const checkResult =
+                    authTokenData.accessToken === undefined
+                        ? undefined
+                        : await openIDClient
+                              .checkTokenAuthWithRefresh(authTokenData.accessToken, authTokenData.encryptedRefreshToken)
+                              .catch((err) => {
+                                  console.warn("Error while checking token auth", err);
+                                  throw new errors.JWTInvalid("Invalid token");
+                              });
+                // A renewal stands for a new login: use the current claims so that removed tags are not carried over
+                const { username, locale, tags } = checkResult?.refreshed ? checkResult.claims : authTokenData;
+
                 //Get user data from Admin Back Office
                 //This is very important to create User Local in LocalStorage in WorkAdventure
                 const resUserData = await adminService.fetchMemberDataByUuid(
                     authTokenData.identifier,
-                    authTokenData.accessToken,
+                    checkResult?.accessToken,
                     playUri,
                     IPAddress,
                     localStorageCharacterTextureIds ?? [],
                     localStorageCompanionTextureId,
                     req.header("accept-language"),
-                    authTokenData.tags,
+                    tags,
                     chatID,
                 );
 
@@ -216,13 +229,13 @@ export class AuthenticateController extends BaseHttpController {
                     return;
                 }
 
-                if (authTokenData.accessToken == undefined) {
+                if (checkResult === undefined) {
                     //if not nonce and code, anonymous user connected
                     //get data with identifier and return token
                     res.json({
                         authToken: token,
-                        username: authTokenData?.username,
-                        locale: authTokenData?.locale,
+                        username,
+                        locale,
                         // TODO: replace ... with each property
                         ...resUserData,
                         matrixUserId: authTokenData?.matrixUserId,
@@ -231,22 +244,28 @@ export class AuthenticateController extends BaseHttpController {
                     return;
                 }
 
-                try {
-                    const resCheckTokenAuth = await openIDClient.checkTokenAuth(authTokenData.accessToken);
-                    res.json({
-                        username: authTokenData?.username,
-                        authToken: token,
-                        locale: authTokenData?.locale,
-                        matrixUserId: authTokenData?.matrixUserId,
-                        matrixServerUrl: (resCheckTokenAuth.matrix_url as string | undefined) ?? MATRIX_PUBLIC_URI,
-                        // TODO: replace ... with each property
-                        ...resUserData,
-                        ...resCheckTokenAuth,
-                    } satisfies MeResponse);
-                } catch (err) {
-                    console.warn("Error while checking token auth", err);
-                    throw new errors.JWTInvalid("Invalid token");
-                }
+                const authToken = checkResult.refreshed
+                    ? await jwtTokenManager.createAuthToken(
+                          authTokenData.identifier,
+                          checkResult.accessToken,
+                          username,
+                          locale,
+                          tags,
+                          authTokenData.matrixUserId,
+                          checkResult.encryptedRefreshToken,
+                      )
+                    : token;
+
+                res.json({
+                    username,
+                    authToken,
+                    locale,
+                    matrixUserId: authTokenData?.matrixUserId,
+                    matrixServerUrl: (checkResult.userInfo.matrix_url as string | undefined) ?? MATRIX_PUBLIC_URI,
+                    // TODO: replace ... with each property
+                    ...resUserData,
+                    ...checkResult.userInfo,
+                } satisfies MeResponse);
                 return;
             } catch (err) {
                 if (err instanceof errors.JWTInvalid || err instanceof errors.JWTExpired) {
@@ -321,6 +340,7 @@ export class AuthenticateController extends BaseHttpController {
                 userInfo?.locale,
                 userInfo?.tags,
                 email ? matrixProvider.getBareMatrixIdFromEmail(email) : undefined,
+                userInfo?.encrypted_refresh_token,
             );
 
             const matrixPublicUri = userInfo.matrix_url ?? MATRIX_PUBLIC_URI;
@@ -403,97 +423,6 @@ export class AuthenticateController extends BaseHttpController {
             });
             res.type("html").send(html);
             return;
-        });
-    }
-
-    /**
-     * @openapi
-     * /register:
-     *   post:
-     *     description: Try to login with an admin token
-     *     parameters:
-     *      - name: "organizationMemberToken"
-     *        in: "body"
-     *        description: "A token allowing a user to connect to a given world"
-     *        required: true
-     *        type: "string"
-     *     responses:
-     *       200:
-     *         description: The details of the logged user
-     *         content:
-     *           application/json:
-     *             schema:
-     *               type: object
-     *               properties:
-     *                 authToken:
-     *                   type: string
-     *                   description: A unique identification JWT token
-     *                 userUuid:
-     *                   type: string
-     *                   description: Unique user ID
-     *                 email:
-     *                   type: string|null
-     *                   description: The email of the user
-     *                   example: john.doe@example.com
-     *                 roomUrl:
-     *                   type: string
-     *                   description: The room URL to connect to
-     *                   example: https://play.workadventu.re/@/foo/bar/baz
-     *                 organizationMemberToken:
-     *                   type: string|null
-     *                   description: TODO- unclear. It seems to be sent back from the request?
-     *                   example: ???
-     *                 mapUrlStart:
-     *                   type: string
-     *                   description: TODO- unclear. I cannot find any use of this
-     *                   example: ???
-     *                 messages:
-     *                   type: array
-     *                   description: The list of messages to be displayed when the user logs?
-     *                   example: ???
-     */
-    private register(): void {
-        this.app.options("/register", (req, res) => {
-            res.status(200).send("");
-        });
-
-        this.app.post("/register", async (req, res) => {
-            debug(`AuthenticateController => [${req.method}] ${req.originalUrl} — IP: ${req.ip} — Time: ${Date.now()}`);
-            const param = req.body;
-
-            //todo: what to do if the organizationMemberToken is already used?
-            const organizationMemberToken: string | null = param.organizationMemberToken;
-            const playUri: string | null = param.playUri;
-
-            if (typeof organizationMemberToken != "string") throw new Error("No organization token");
-            const data = await adminService.fetchMemberDataByToken(
-                organizationMemberToken,
-                playUri,
-                req.header("accept-language"),
-            );
-            const userUuid = data.userUuid;
-            const email = data.email;
-            const roomUrl = data.roomUrl;
-            const mapUrlStart = data.mapUrlStart;
-            const matrixUserId = email ? matrixProvider.getBareMatrixIdFromEmail(email) : undefined;
-
-            const authToken = await jwtTokenManager.createAuthToken(
-                email || userUuid,
-                undefined,
-                undefined,
-                undefined,
-                [],
-                matrixUserId,
-            );
-
-            res.json({
-                authToken,
-                userUuid,
-                email,
-                roomUrl,
-                mapUrlStart,
-                organizationMemberToken,
-            } satisfies RegisterData);
         });
     }
 
@@ -661,7 +590,7 @@ export class AuthenticateController extends BaseHttpController {
             // TODO: change that to use end session endpoint
             // Use post logout redirect and id token hint to redirect on the logut session endpoint of the OpenId provider
             // https://openid.net/specs/openid-connect-session-1_0.html#RPLogout
-            await openIDClient.logoutUser(authTokenData.accessToken);
+            await openIDClient.logoutUser(authTokenData.accessToken, authTokenData.encryptedRefreshToken);
 
             // if no redirect, redirect to playUri and connect user to the world
             // if the world is with authentication mandatory, the user will be redirected to the login screen

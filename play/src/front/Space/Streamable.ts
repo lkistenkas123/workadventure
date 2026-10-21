@@ -3,6 +3,7 @@ import type { RemoteVideoTrack } from "livekit-client";
 import type { WorkAdventureComponent } from "../../types/component";
 import type { PeerStatus } from "../WebRtc/RemotePeer";
 import type { WebRtcStats } from "../Components/Video/WebRtcStats";
+import type { LocalEncoderStats } from "../WebRtc/LocalEncoderStats";
 import type { VideoConfig } from "../Api/Events/Ui/PlayVideoEvent";
 
 export interface LivekitStreamable {
@@ -40,6 +41,9 @@ export interface ComponentStreamable {
 
 export type StreamCategory = "video" | "screenSharing" | "scripting" | "component";
 
+// Our own screen capture: local preview + the outgoing peers that send it.
+export const LOCAL_SCREEN_SHARING_STREAM_ID = "localScreenSharingStream";
+
 export interface Streamable {
     readonly uniqueId: string;
     readonly media: LivekitStreamable | WebRtcStreamable | ScriptingVideoStreamable | ComponentStreamable;
@@ -65,7 +69,6 @@ export interface Streamable {
     // In fit mode, the video will fit into the container and be fully visible, even if it does not fill the full container
     // In cover mode, the video will cover the full container, even if it means that some parts of the video are not visible
     readonly displayMode: "fit" | "cover";
-    readonly displayInPictureInPictureMode: boolean;
     readonly usePresentationMode: boolean;
     readonly spaceUserId: string | undefined;
     readonly closeStreamable: () => void;
@@ -77,4 +80,8 @@ export interface Streamable {
     readonly volume: Writable<number>;
     readonly videoType: StreamCategory;
     readonly webrtcStats: Readable<WebRtcStats | undefined> | undefined;
+    /**
+     * Health of our own encoder(s), set on the local camera / screen share feedback tiles only.
+     */
+    readonly senderStats?: Readable<LocalEncoderStats | undefined>;
 }

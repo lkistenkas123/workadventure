@@ -1,7 +1,6 @@
 <script lang="ts">
     import { HtmlUtils } from "../../WebRtc/HtmlUtils";
     import { gameManager } from "../../Phaser/Game/GameManager";
-    import { AdminMessageEventTypes } from "../../Connection/AdminMessagesService";
     import uploadFile from "../images/drag-and-drop.svg";
     import uploadFileActive from "../images/drag-and-drop-active.svg";
     import type { PlayGlobalMessageInterface } from "../../Connection/ConnexionModels";
@@ -19,10 +18,11 @@
     let errorUpload: boolean = $state(false);
     let dropHover = $state(false);
 
-    const AUDIO_TYPE = AdminMessageEventTypes.audio;
+    const AUDIO_TYPE = "audio";
 
     export type AudioGlobalMessageHandle = {
-        sendAudioMessage(broadcast: boolean): Promise<void>;
+        /** Resolves to false when nothing was sent; the error is then shown under the upload area. */
+        sendAudioMessage(broadcast: boolean): Promise<boolean>;
     };
 
     interface Props {
@@ -34,13 +34,13 @@
     handleSending = {
         async sendAudioMessage(broadcast: boolean) {
             if (gameScene == undefined) {
-                return;
+                return false;
             }
             const inputAudio = HtmlUtils.getElementByIdOrFail<HTMLInputElement>("input-send-audio");
             const selectedFile = inputAudio.files ? inputAudio.files[0] : null;
             if (!selectedFile) {
                 errorFile = true;
-                throw new Error("no file selected");
+                return false;
             }
 
             const fd = new FormData();
@@ -57,9 +57,11 @@
                 fileName = undefined;
                 gameScene.connection?.emitGlobalMessage(audioGlobalMessage);
                 errorUpload = false;
+                return true;
             } catch (err) {
                 console.error(err);
                 errorUpload = true;
+                return false;
             }
         },
     };
@@ -73,6 +75,10 @@
         const file = event.dataTransfer.files[0];
         if (!file) {
             return;
+        }
+        // Sending reads the file from the input: put the dropped file there too.
+        if (fileInput) {
+            fileInput.files = event.dataTransfer.files;
         }
         fileName = file.name;
         fileSize = getFileSize(file.size);

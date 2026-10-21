@@ -81,13 +81,19 @@ function isJsonCreate(name: string): boolean {
     const stats = fs.statSync(file);
     const timeCreation = stats.mtime.getTime();
     const twoHoursAgo = new Date().getTime() - 60 * 60 * 1000; // 1 hour in ms
-    return timeCreation > twoHoursAgo;
+    if (timeCreation <= twoHoursAgo) {
+        return false;
+    }
+    // Storage is per origin: a state saved against another deployment (PLAY_URL changed) is worthless here
+    const state = JSON.parse(fs.readFileSync(file, "utf8")) as { origins?: { origin: string }[] };
+    return (state.origins ?? []).some((entry) => entry.origin === new URL(play_url).origin);
 }
 
 async function createUser(
     name:
         | "Alice"
         | "Bob"
+        | "Charlie"
         | "Eve"
         | "Mallory"
         | "Admin1"
@@ -97,7 +103,8 @@ async function createUser(
         | "UserLogin1"
         | "John"
         | "UserMatrix2"
-        | "User1",
+        | "User1"
+        | "Carol",
     browser: Browser,
     url: string,
 ): Promise<void> {
@@ -145,18 +152,23 @@ async function createUser(
         case "Admin1":
         case "Admin2":
             await oidcAdminTagLogin(page);
+            await waitForMatrixLogin(page);
             break;
         case "Member1":
             await oidcMemberTagLogin(page);
+            await waitForMatrixLogin(page);
             break;
         case "UserMatrix":
             await oidcMatrixUserLogin(page);
+            await waitForMatrixLogin(page);
             break;
         case "UserMatrix2":
             await oidcMatrixUserLogin(page, "UserMatrix2");
+            await waitForMatrixLogin(page);
             break;
         case "UserLogin1":
             await oidcLogin(page);
+            await waitForMatrixLogin(page);
             break;
         default:
             break;
@@ -169,11 +181,22 @@ async function createUser(
     await closeContext(context);
 }
 
+/**
+ * The OpenID login hands the page a single-use Matrix login token, which it swaps for an access token right after
+ * /me. The map does not wait for that, so saving the state as soon as the map shows could miss the Matrix session.
+ */
+async function waitForMatrixLogin(page: Page): Promise<void> {
+    await page.waitForFunction(() => localStorage.getItem("matrixAccessToken") !== null, undefined, {
+        timeout: 60_000,
+    });
+}
+
 export async function getPage(
     browser: Browser,
     name:
         | "Alice"
         | "Bob"
+        | "Charlie"
         | "Eve"
         | "Mallory"
         | "Admin1"
@@ -183,7 +206,8 @@ export async function getPage(
         | "UserLogin1"
         | "John"
         | "UserMatrix2"
-        | "User1",
+        | "User1"
+        | "Carol",
     url: string,
     options: {
         pageCreatedHook?: (page: Page) => void | Promise<void>;
@@ -191,6 +215,13 @@ export async function getPage(
 ): Promise<Page> {
     await createUser(name, browser, url);
     const newBrowser: BrowserContext = await browser.newContext({ storageState: "./.auth/" + name + ".json" });
+    // Noise suppression is on by default: turn it off so that each page does not load the noise suppression models.
+    // Only when unset, so a test that turns it on keeps its choice across reloads.
+    await newBrowser.addInitScript(() => {
+        if (localStorage.getItem("noiseSuppressionEnabled") === null) {
+            localStorage.setItem("noiseSuppressionEnabled", "false");
+        }
+    });
     const page: Page = await newBrowser.newPage();
     if (options.pageCreatedHook) {
         await options.pageCreatedHook(page);

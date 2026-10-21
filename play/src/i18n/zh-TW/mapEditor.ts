@@ -87,6 +87,9 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
             defaultButtonLabel: "播放音樂",
             error: "無法載入聲音",
             actionButtonLabel: "播放音樂",
+            playForAllUsersLabel: "為地圖上所有使用者播放",
+            audibleRadiusLabel: "可聽半徑（像素）",
+            audibleRadiusPlaceholder: "留空則處處可聽",
         },
         openWebsite: {
             label: "開啟連結",
@@ -300,6 +303,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 startWithAudioMuted: "以麥克風靜音開始",
                 startWithVideoMuted: "以視訊關閉開始",
                 disableChat: "停用聊天",
+                raiseHandEnabled: "允許舉手",
                 livekitRoomAdminTag: "會議室的版主標籤",
                 cancel: "取消",
                 validate: "驗證",
@@ -321,6 +325,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
         advancedOptions: "進階選項",
         chatEnabled: "關聯專用聊天頻道",
         allowTalking: "允許交談和形成氣泡",
+        raiseHandEnabled: "允許舉手",
         noProperties: "未定義屬性",
     },
     areaEditor: {
@@ -447,7 +452,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 audienceVideoFeedbackActivated: "禮堂模式",
                 audienceVideoFeedbackActivatedDisabled: "禮堂模式",
                 audienceVideoFeedbackActivatedHelper:
-                    "禮堂模式已啟用：接收房間／世界中所有使用者（已啟用攝影機和麥克風）的攝影機和麥克風串流。但參與者將無法看到其他參與者。預設停用。",
+                    "禮堂模式已啟用：接收房間／世界中所有使用者（已啟用攝影機）的攝影機串流，不含聲音。但參與者將無法看到其他參與者。預設停用。",
                 error: {
                     title: "請輸入標題",
                     save: {

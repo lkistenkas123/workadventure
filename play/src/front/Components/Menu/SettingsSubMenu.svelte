@@ -1,10 +1,11 @@
 <script lang="ts">
     import { tick } from "svelte";
     import { fly } from "svelte/transition";
-    import type { NoiseSuppressionProvider } from "../../Connection/LocalUserStore";
+    import type { NoiseSuppressionEngine, NoiseSuppressionProvider } from "../../Connection/LocalUserStore";
     import {
         audioManagerFileStore,
         audioManagerVisibilityStore,
+        audioManagerVolumeStore,
         bubbleSoundStore,
     } from "../../Stores/AudioManagerStore";
     import { HtmlUtils } from "../../WebRtc/HtmlUtils";
@@ -12,11 +13,13 @@
     import type { Locales } from "../../../i18n/i18n-types";
     import { displayableLocales, setCurrentLocale } from "../../Utils/locales";
     import { gameManager } from "../../Phaser/Game/GameManager";
+    import { Room } from "../../Connection/Room";
 
     import { analyticsClient } from "../../Administration/AnalyticsClient";
     import { localUserStore } from "../../Connection/LocalUserStore";
     import { videoQualityStore } from "../../Stores/MediaStore";
     import { browserNotificationStore } from "../../Stores/BrowserNotificationStore";
+    import { helpNotificationSettingsVisibleStore } from "../../Stores/HelpSettingsStore";
     import { screenShareQualityStore } from "../../Stores/ScreenSharingStore";
     import { volumeProximityDiscussionStore } from "../../Stores/PeerStore";
     import { bandwidthConstrainedPreferenceStore } from "../../Stores/BandwidthConstrainedPreferenceStore";
@@ -29,6 +32,7 @@
         microphoneEchoCancellationStore,
         noiseSuppressionEnabledStore,
         noiseSuppressionProviderStore,
+        noiseSuppressionEngineStore,
         noiseSuppressionStateStore,
         voiceIsolationSupportedStore,
     } from "../../Stores/NoiseSuppressionStore";
@@ -37,6 +41,7 @@
     import SoundSelect from "../Input/SoundSelect.svelte";
     import { displayVideoQualityStore } from "../../Stores/DisplayVideoQualityStore";
     import InputRadioBox from "../Input/InputRadioBox.svelte";
+    import Select from "../Input/Select.svelte";
     import Chip from "../UI/Chip.svelte";
     import {
         IconAntennaBarsLow,
@@ -61,8 +66,17 @@
     );
     let disableAnimations: boolean = $state(localUserStore.getDisableAnimations());
     let valueLocale: string = $state($locale);
-    let valueCameraPrivacySettings = $state(localUserStore.getCameraPrivacySettings());
-    let valueMicrophonePrivacySettings = $state(localUserStore.getMicrophonePrivacySettings());
+    let valueCameraPrivacySettings = $state(
+        localUserStore.getCameraPrivacySettings(
+            gameManager.currentStartedRoomOrNull?.defaultCameraPrivacySettings ?? Room.DEFAULT_CAMERA_PRIVACY_SETTINGS,
+        ),
+    );
+    let valueMicrophonePrivacySettings = $state(
+        localUserStore.getMicrophonePrivacySettings(
+            gameManager.currentStartedRoomOrNull?.defaultMicrophonePrivacySettings ??
+                Room.DEFAULT_MICROPHONE_PRIVACY_SETTINGS,
+        ),
+    );
     const initialVideoQuality = localUserStore.getVideoQuality();
     let valueVideoQuality = $state(initialVideoQuality === "high" ? 3 : initialVideoQuality === "low" ? 1 : 2);
     const initialScreenShareQuality = localUserStore.getScreenShareQuality();
@@ -161,9 +175,19 @@
         noiseSuppressionProviderStore.setProvider(selectedNoiseSuppressionProvider);
     }
 
+    function updateNoiseSuppressionEngine(event: Event) {
+        const value = (event.target as HTMLSelectElement).value;
+        noiseSuppressionEngineStore.setEngine(value === "dtln" ? "dtln" : "deepfilternet");
+    }
+
+    const noiseSuppressionEngineOptions: { value: NoiseSuppressionEngine; label: string }[] = $derived([
+        { value: "deepfilternet", label: $LL.menu.settings.microphone.noiseSuppressionEngineDeepFilterNet() },
+        { value: "dtln", label: $LL.menu.settings.microphone.noiseSuppressionEngineDtln() },
+    ]);
+
     function changeFullscreen() {
         // Analytics Client
-        analyticsClient.settingFullscreen(fullscreen ? "true" : "false");
+        analyticsClient.trackAdminEvent("settings.fullscreen.changed", { value: fullscreen ? "true" : "false" });
 
         const body = HtmlUtils.querySelectorOrFail("body");
         if (body) {
@@ -178,9 +202,10 @@
 
     function changeNotification() {
         // Analytics Client
-        analyticsClient.settingNotification(notification ? "true" : "false");
+        analyticsClient.trackAdminEvent("settings.notification.changed", { value: notification ? "true" : "false" });
 
-        if (Notification.permission === "granted") {
+        // Turning notifications off never needs the permission.
+        if (!notification || Notification.permission === "granted") {
             localUserStore.setNotification(notification);
             browserNotificationStore.refresh();
         } else {
@@ -191,6 +216,10 @@
                     } else {
                         localUserStore.setNotification(false);
                         notification = false;
+                        // The browser does not ask again once denied: explain how to unblock notifications.
+                        if (response === "denied") {
+                            helpNotificationSettingsVisibleStore.set(true);
+                        }
                     }
                     browserNotificationStore.refresh();
                 })
@@ -200,7 +229,9 @@
 
     function changePictureInPicture() {
         // Analytics Client
-        analyticsClient.settingPictureInPicture(allowPictureInPicture ? "true" : "false");
+        analyticsClient.trackAdminEvent("settings.picture_in_picture.changed", {
+            value: allowPictureInPicture ? "true" : "false",
+        });
 
         localUserStore.setAllowPictureInPicture(allowPictureInPicture);
     }
@@ -215,23 +246,30 @@
 
     function changeForceCowebsiteTrigger() {
         // Analytics Client
-        analyticsClient.settingAskWebsite(forceCowebsiteTrigger ? "true" : "false");
+        analyticsClient.trackAdminEvent("settings.ask_website.changed", {
+            value: forceCowebsiteTrigger ? "true" : "false",
+        });
 
         localUserStore.setForceCowebsiteTrigger(forceCowebsiteTrigger);
     }
 
     function changeIgnoreFollowRequests() {
         // Analytics Client
-        analyticsClient.settingRequestFollow(ignoreFollowRequests ? "true" : "false");
+        analyticsClient.trackAdminEvent("settings.request_follow.changed", {
+            value: ignoreFollowRequests ? "true" : "false",
+        });
 
         localUserStore.setIgnoreFollowRequests(ignoreFollowRequests);
     }
 
     function changeDecreaseAudioPlayerVolumeWhileTalking() {
         // Analytics Client
-        analyticsClient.settingDecreaseAudioVolume(decreaseAudioPlayerVolumeWhileTalking ? "true" : "false");
+        analyticsClient.trackAdminEvent("settings.decrease_audio_volume.changed", {
+            value: decreaseAudioPlayerVolumeWhileTalking ? "true" : "false",
+        });
 
         localUserStore.setDecreaseAudioPlayerVolumeWhileTalking(decreaseAudioPlayerVolumeWhileTalking);
+        audioManagerVolumeStore.setDecreaseWhileTalking(decreaseAudioPlayerVolumeWhileTalking);
     }
 
     function changeDisableAnimations() {
@@ -241,7 +279,9 @@
 
     function changeCameraPrivacySettings() {
         // Analytics Client
-        analyticsClient.settingMicrophone(valueCameraPrivacySettings ? "true" : "false");
+        analyticsClient.trackAdminEvent("settings.camera.changed", {
+            value: valueCameraPrivacySettings ? "true" : "false",
+        });
 
         if (valueCameraPrivacySettings !== previewCameraPrivacySettings) {
             previewCameraPrivacySettings = valueCameraPrivacySettings;
@@ -251,7 +291,9 @@
 
     function changeMicrophonePrivacySettings() {
         // Analytics Client
-        analyticsClient.settingCamera(valueMicrophonePrivacySettings ? "true" : "false");
+        analyticsClient.trackAdminEvent("settings.microphone.changed", {
+            value: valueMicrophonePrivacySettings ? "true" : "false",
+        });
 
         if (valueMicrophonePrivacySettings !== previewMicrophonePrivacySettings) {
             previewMicrophonePrivacySettings = valueMicrophonePrivacySettings;
@@ -260,7 +302,7 @@
     }
 
     function updateVolumeProximityDiscussion() {
-        analyticsClient.settingAudioVolume();
+        analyticsClient.trackAdminEvent("settings.audio_volume.opened");
         localUserStore.setVolumeProximityDiscussion(volumeProximityDiscussion);
         volumeProximityDiscussionStore.set(volumeProximityDiscussion);
     }
@@ -511,6 +553,18 @@
                     </InputRadioBox>
                 {/if}
             </div>
+            {#if selectedNoiseSuppressionProvider === "workadventure"}
+                <div class="px-4">
+                    <Select
+                        id="noise-suppression-engine"
+                        dataTestId="noise-suppression-engine"
+                        label={$LL.menu.settings.microphone.noiseSuppressionEngine()}
+                        options={noiseSuppressionEngineOptions}
+                        value={$noiseSuppressionEngineStore}
+                        onchange={updateNoiseSuppressionEngine}
+                    />
+                </div>
+            {/if}
         {/if}
 
         <div class="flex flex-col cursor-pointer relative m-4 gap-2">

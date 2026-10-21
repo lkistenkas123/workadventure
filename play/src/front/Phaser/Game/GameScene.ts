@@ -1,7 +1,6 @@
 import * as Sentry from "@sentry/svelte";
 import * as Phaser from "phaser";
 import type { Subscription } from "rxjs";
-import { TimeoutError } from "@workadventure/shared-utils/src/Abort/TimeoutError";
 import { Queue } from "queue-typescript";
 import type { Readable, Unsubscriber } from "svelte/store";
 import { get } from "svelte/store";
@@ -13,17 +12,17 @@ import { ChatMessageTypes, Deferred, SpatialMap } from "@workadventure/shared-ut
 import {
     AvailabilityStatus,
     availabilityStatusToJSON,
+    type BanUserMessage,
     ErrorScreenMessage,
     FilterType,
     type GroupUsersUpdateMessage,
     PositionMessage_Direction,
+    type SendUserMessage,
 } from "@workadventure/messages";
 import { z } from "zod";
 import type { ITiledMap, ITiledMapLayer, ITiledMapObject, ITiledMapTileset } from "@workadventure/tiled-map-type-guard";
 import {
     type AreaData,
-    ENTITIES_FOLDER_PATH_NO_PREFIX,
-    ENTITY_COLLECTION_FILE,
     EntityPermissions,
     type EntityPrefabType,
     GameMap,
@@ -34,7 +33,8 @@ import {
 import { wamFileMigration } from "@workadventure/map-editor/src/Migrations/WamFileMigration";
 import Debug from "debug";
 import { asError } from "catch-unknown";
-import { userMessageManager } from "../../Administration/UserMessageManager";
+import { textMessageStore } from "../../Stores/TypeMessageStore/TextMessageStore";
+import { soundPlayingStore } from "../../Stores/SoundPlayingStore";
 import { connectionManager } from "../../Connection/ConnectionManager";
 import { urlManager } from "../../Url/UrlManager";
 import { mediaManager } from "../../WebRtc/MediaManager";
@@ -56,6 +56,7 @@ import {
     MAX_PER_GROUP,
     POSITION_DELAY,
     PUBLIC_MAP_STORAGE_PREFIX,
+    UPLOADER_URL,
     WOKA_SPEED,
 } from "../../Enum/EnvironmentVariable";
 import { Room } from "../../Connection/Room";
@@ -72,6 +73,7 @@ import { TextUtils } from "../Components/TextUtils";
 import { joystickBaseImg, joystickBaseKey, joystickThumbImg, joystickThumbKey } from "../Components/MobileJoystick";
 import { PropertyUtils } from "../Map/PropertyUtils";
 import { analyticsClient } from "../../Administration/AnalyticsClient";
+import { stripUrlSensitiveParts } from "../../Administration/CowebsiteAnalyticsProperties";
 import { PathfindingManager, PathTileType } from "../../Utils/PathfindingManager";
 import type {
     GroupCreatedUpdatedMessageInterface,
@@ -87,6 +89,9 @@ import type { ItemFactoryInterface } from "../Items/ItemFactoryInterface";
 import { biggestAvailableAreaStore } from "../../Stores/BiggestAvailableAreaStore";
 import { playersStore } from "../../Stores/PlayersStore";
 import { emoteStore } from "../../Stores/EmoteStore";
+import { isHandRaisedStore, requestedHandRaiseState } from "../../Stores/RaiseHandStore";
+import { raisedHandPlayerIdsStore } from "../../Stores/RaisedHandsStore";
+import { isInRemoteConversation } from "../../Stores/StreamableCollectionStore";
 import {
     jitsiParticipantsCountStore,
     userIsAdminStore,
@@ -116,10 +121,13 @@ import {
     requestedMicrophoneState,
     speakerSelectedStore,
 } from "../../Stores/MediaStore";
+import { devicesToOffer } from "../../Stores/AudioOutputStore";
 import NoMicrophoneSoundToast from "../../Components/Toasts/NoMicrophoneSoundToast.svelte";
+import LoudEnvironmentToast from "../../Components/Toasts/LoudEnvironmentToast.svelte";
 import { LL, locale } from "../../../i18n/i18n-svelte";
 import { toastStore } from "../../Stores/ToastStoreSingleton";
 import { audioInterruptedStore } from "../../Stores/AudioInterruptedStore";
+import { loudEnvironmentWarningStore } from "../../Stores/LoudEnvironmentWarningStore";
 import { GameSceneUserInputHandler } from "../UserInput/GameSceneUserInputHandler";
 import { followUsersColorStore, followUsersStore } from "../../Stores/FollowStore";
 import { axiosWithRetry, hideConnectionIssueMessage, showConnectionIssueMessage } from "../../Connection/AxiosUtils";
@@ -151,7 +159,13 @@ import { SpaceScriptingBridgeService } from "../../Space/Utils/SpaceScriptingBri
 import { debugAddPlayer, debugRemovePlayer, debugUpdatePlayer, debugZoom } from "../../Utils/Debuggers";
 import { checkCoturnServer } from "../../Components/Video/utils";
 import { BroadcastService } from "../../Streaming/BroadcastService";
-import { megaphoneCanBeUsedStore, megaphoneSpaceSettingsStore, megaphoneSpaceStore } from "../../Stores/MegaphoneStore";
+import {
+    megaphoneCanBeUsedStore,
+    megaphoneSpaceSettingsStore,
+    megaphoneSpaceStore,
+    requestedMegaphoneStore,
+} from "../../Stores/MegaphoneStore";
+import { stopMegaphoneLive } from "../../Components/ActionBar/MenuIcons/megaphoneActions";
 import { CompanionTextureError } from "../../Exception/CompanionTextureError";
 import { SelectCompanionScene, SelectCompanionSceneName } from "../Login/SelectCompanionScene";
 import { scriptUtils } from "../../Api/ScriptUtils";
@@ -167,6 +181,7 @@ import {
 } from "../../Chat/Connection/Proximity/ProximityChatRoomManager";
 import { ProximitySpaceManager } from "../../WebRtc/ProximitySpaceManager";
 import { audioContextManager } from "../../WebRtc/AudioContextManager";
+import { bindAudioOutput, pendingSinkRequests } from "../../WebRtc/AudioOutputManager";
 import { noMicrophoneSoundWarningVisibleStore } from "../../Stores/NoMicrophoneSoundWarningVisibleStore";
 import type { SpaceRegistryInterface } from "../../Space/SpaceRegistry/SpaceRegistryInterface";
 import { WorldUserProvider } from "../../Chat/UserProvider/WorldUserProvider";
@@ -189,10 +204,15 @@ import PopUpMapEditorNotEnabled from "../../Components/PopUp/PopUpMapEditorNotEn
 import PopUpMapEditorShortcut from "../../Components/PopUp/PopUpMapEditorShortcut.svelte";
 import { enableUserInputsStore } from "../../Stores/UserInputStore";
 import { ScriptLoadedError } from "../../Api/ScriptLoadedError";
-import { screenShareStreamStore, videoStreamStore } from "../../Stores/PeerStore";
+import {
+    mediaSynchronizedSpacesStore,
+    raisedHandSectionsStore,
+    screenShareStreamStore,
+    videoStreamStore,
+} from "../../Stores/PeerStore";
 import type { ChatConnectionInterface, ChatUser } from "../../Chat/Connection/ChatConnection";
 import { selectedRoomStore } from "../../Chat/Stores/SelectRoomStore";
-import { raceTimeout } from "../../Utils/PromiseUtils";
+import { getCustomEntityCollectionUrl } from "../../Utils/MapStorageUrl";
 import { PLAYTEXT_NEW_MEDIA_DEVICE_PREFIX } from "../Entity/Character";
 import { type Avatar, ConversationBubble } from "../Entity/ConversationBubble";
 import { DarkenOutsideAreaEffect } from "../Components/DarkenOutsideArea/DarkenOutsideAreaEffect";
@@ -205,6 +225,7 @@ import { EnterLeaveScriptingService } from "../Helpers/EnterLeaveScriptingServic
 import { GameMapFrontWrapper } from "./GameMap/GameMapFrontWrapper";
 import { gameManager } from "./GameManager";
 import { EmoteManager } from "./EmoteManager";
+import { EntityAudioManager } from "./EntityAudioManager";
 import { OutlineManager } from "./UI/OutlineManager";
 import { soundManager } from "./SoundManager";
 import { SharedVariablesManager } from "./SharedVariablesManager";
@@ -322,6 +343,9 @@ export class GameScene extends DirtyScene {
     // Promise resolved when we receive the first message of the roomConnection (RoomConnectedMessage)
     private connectionAnswerPromiseDeferred: Deferred<void>;
     private roomJoinedPromiseDeferred: Deferred<RoomJoinedMessageInterface>;
+    // Resolved once the chat connection is ready (the Matrix initial sync included) and the user's Matrix id, if any,
+    // was sent to the server. Until then, the server cannot invite the user into a room. The map does not wait for it.
+    public chatIdSentDeferred: Deferred<void>;
     // true is soon as the roomConnection received the "roomJoined" message.
     private hasJoinedRoom: boolean = false;
     // A promise that will resolve when the "create" method is called (signaling loading is ended)
@@ -333,6 +357,8 @@ export class GameScene extends DirtyScene {
     private tileAnimationRefreshEvent: Phaser.Time.TimerEvent | undefined;
     private messageSubscription: Subscription | null = null;
     private rxJsSubscriptions: Array<Subscription> = [];
+    // Player ids of remote players whose raised hand is currently shown above their woka (to diff on store updates).
+    private previousRaisedHandPlayerIds = new Set<number>();
     private localVolumeStoreUnsubscriber: Unsubscriber | undefined;
     private unsubscribers: Unsubscriber[] = [];
     private storesSubscribed = false;
@@ -349,6 +375,7 @@ export class GameScene extends DirtyScene {
     private outlineManager!: OutlineManager;
     private mapTransitioning = false; //used to prevent transitions happening at the same time.
     private emoteManager!: EmoteManager;
+    private entityAudioManager!: EntityAudioManager;
     private cameraManager!: CameraManager;
     private mapEditorModeManager: MapEditorModeManager | undefined;
     private entitiesCollectionsManager!: EntitiesCollectionsManager;
@@ -378,6 +405,9 @@ export class GameScene extends DirtyScene {
     private showVoiceIndicatorChangeMessageSent = false;
     private jitsiDominantSpeaker = false;
     private jitsiParticipantsCount = 0;
+    private readonly worldLoadStartedAt = performance.now();
+    private mapLoadSucceededAnalyticsSent = false;
+    private mapLoadFailedAnalyticsSent = false;
     private cleanupDone = false;
     private playersEventDispatcher = new IframeEventDispatcher();
     private playersMovementEventDispatcher = new IframeEventDispatcher();
@@ -446,12 +476,16 @@ export class GameScene extends DirtyScene {
             this.wamUrlFile = _room.wamUrl;
         }
         this.roomUrl = _room.key;
+        analyticsClient.trackAdminEvent("map_loading.started", {
+            mapUrl: stripUrlSensitiveParts(this.mapUrlFile || this.wamUrlFile || this.roomUrl),
+        });
 
         this.entitiesCollectionsManager = new EntitiesCollectionsManager();
 
         this.createPromiseDeferred = new Deferred<void>();
         this.connectionAnswerPromiseDeferred = new Deferred<void>();
         this.roomJoinedPromiseDeferred = new Deferred<RoomJoinedMessageInterface>();
+        this.chatIdSentDeferred = new Deferred<void>();
         this.loader = new Loader(this);
         this.superLoad = new SuperLoaderPlugin(this);
     }
@@ -491,13 +525,17 @@ export class GameScene extends DirtyScene {
             `audio-webrtc-out-${selectedBubbleSound}`,
             `/resources/objects/webrtc-out-${selectedBubbleSound}.mp3`,
         );
-        this.load.audio("audio-report-message", "/resources/objects/report-message.mp3");
         this.load.audio("audio-cloud", "/resources/objects/cloud.mp3");
         this.load.audio("new-message", "/resources/objects/new-message.mp3");
         this.load.audio("meeting-in", "/resources/objects/meeting-in.wav");
         this.load.audio("meeting-out", "/resources/objects/meeting-out.wav");
 
         this.sound.pauseOnBlur = false;
+        // Bubble, meeting and scripting API sounds play through Phaser's own AudioContext (absent when Phaser falls back
+        // to HTML5 audio), bypassing media elements: it follows the selected audio output itself.
+        if (this.sound instanceof Phaser.Sound.WebAudioSoundManager) {
+            this.unsubscribers.push(bindAudioOutput(this.sound.context));
+        }
 
         this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, (file: { src: string }) => {
             // If we happen to be in HTTP and we are trying to load a URL in HTTPS only... (this happens only in dev environments)
@@ -552,6 +590,10 @@ export class GameScene extends DirtyScene {
             //once preloading is over, we don't want loading errors to crash the game, so we need to disable this behavior after preloading.
             //if SpriteSheetFile (WOKA file) don't display error and give an access for user
             if (this.preloading && !(file instanceof Phaser.Loader.FileTypes.SpriteSheetFile)) {
+                analyticsClient.trackAdminEvent("asset.error", {
+                    kind: "asset",
+                    reason: stripUrlSensitiveParts(file?.src ?? this.originalMapUrl),
+                });
                 //remove loader in progress
                 this.handleErrorAndCleanup(
                     new Error('Cannot load "' + (file?.src ?? this.originalMapUrl) + '"'),
@@ -604,6 +646,7 @@ export class GameScene extends DirtyScene {
             return;
         }
 
+        this.trackMapLoadingFailure(errorCode);
         this.loader.removeLoader();
         errorScreenStore.setError(
             ErrorScreenMessage.fromPartial({
@@ -621,8 +664,10 @@ export class GameScene extends DirtyScene {
     }
 
     public getCustomEntityCollectionUrl() {
-        const mapStoragePath = `${PUBLIC_MAP_STORAGE_PREFIX}${ENTITIES_FOLDER_PATH_NO_PREFIX}/${ENTITY_COLLECTION_FILE}`;
-        return new URL(mapStoragePath, this.wamUrlFile).toString();
+        if (this.wamUrlFile === undefined) {
+            throw new Error("Cannot resolve the custom entity collection URL: the map has no WAM file.");
+        }
+        return getCustomEntityCollectionUrl(this.wamUrlFile, PUBLIC_MAP_STORAGE_PREFIX);
     }
 
     //hook initialisation
@@ -649,6 +694,7 @@ export class GameScene extends DirtyScene {
         gameManager.gameSceneIsCreated(this);
         urlManager.pushRoomIdToUrl(this._room);
         analyticsClient.enteredRoom(this._room.id, this._room.group);
+        this.trackMapLoadingSuccess();
         contactPageStore.set(this._room.contactPage);
 
         if (touchScreenManager.supportTouchScreen) {
@@ -798,8 +844,6 @@ export class GameScene extends DirtyScene {
 
         this.removeAllRemotePlayers(); //cleanup the list  of remote players in case the scene was rebooted
 
-        this.tryMovePlayerWithMoveToParameter();
-
         this.cameraManager = new CameraManager(
             this,
             { width: this.Map.widthInPixels, height: this.Map.heightInPixels },
@@ -932,18 +976,8 @@ export class GameScene extends DirtyScene {
             this.gameMapFrontWrapper.initializedPromise.promise.then(() =>
                 debug("Loading process: Game map initialized"),
             ),
-            // Wait at most 5 seconds for the chat connection to be established
-            // If not, we can still proceed starting the scene without chat fully loaded
-            raceTimeout(gameManager.getChatConnection(), 5_000)
-                .then(() => debug("Loading process: Chat connection ready"))
-                .catch((e) => {
-                    if (e instanceof TimeoutError) {
-                        debug("Loading process: Chat connection timeout. Continuing loading while chat loads.");
-                        return;
-                    } else {
-                        throw e;
-                    }
-                }),
+            // The chat is deliberately not awaited: the map shows right away and the chat catches up once
+            // Matrix is ready (see GameManager.chatConnectionStore).
         ])
             .then((results) => {
                 const settledScriptLoadedResult = results[1];
@@ -985,8 +1019,19 @@ export class GameScene extends DirtyScene {
                                 gameSceneIsLoadedStore.set(true);
                                 this.sceneReadyToStartDeferred.resolve();
                                 this.initializeAreaManager();
+                                // #moveTo walks the player along a path: it needs the player (created when the pusher
+                                // answered) and the areas the user cannot enter in the collision grid, which only
+                                // exist once the areas manager is initialized.
+                                this.tryMovePlayerWithMoveToParameter();
                             })
                             .catch((e) => {
+                                if (e instanceof CloseEvent) {
+                                    // The socket closed before the room was joined. This is a lost connection, not a
+                                    // bug, and the user already sees it: RoomConnection emits serverDisconnected, and
+                                    // the scene shows the connection issue toast and reconnects from there (or the page
+                                    // is unloading, code 1000). An error screen would cover that reconnection.
+                                    return;
+                                }
                                 console.error("Error while joining the room", e);
                                 Sentry.captureException(e);
                                 errorScreenStore.setException(e);
@@ -1018,7 +1063,8 @@ export class GameScene extends DirtyScene {
             .catch((e) => {
                 console.error(e);
                 Sentry.captureException(e);
-            });
+            })
+            .finally(() => this.chatIdSentDeferred.resolve());
 
         if (this.game.renderer instanceof WebGLRenderer) {
             this._focusFx = new DarkenOutsideAreaEffect(this, this.cameras.main, {
@@ -1027,6 +1073,30 @@ export class GameScene extends DirtyScene {
                 tweenDurationMs: 250,
             });
         }
+    }
+
+    private getWorldLoadDurationMs(): number {
+        return Math.round(performance.now() - this.worldLoadStartedAt);
+    }
+
+    private trackMapLoadingSuccess(): void {
+        if (this.mapLoadSucceededAnalyticsSent || this.mapLoadFailedAnalyticsSent) {
+            return;
+        }
+
+        this.mapLoadSucceededAnalyticsSent = true;
+        const durationMs = this.getWorldLoadDurationMs();
+        analyticsClient.trackAdminEvent("map_loading.succeeded", { durationMs });
+        analyticsClient.trackAdminEvent("world.entered", { durationMs });
+    }
+
+    private trackMapLoadingFailure(reason: string): void {
+        if (this.mapLoadFailedAnalyticsSent || this.mapLoadSucceededAnalyticsSent) {
+            return;
+        }
+
+        this.mapLoadFailedAnalyticsSent = true;
+        analyticsClient.trackAdminEvent("map_loading.failed", { reason, durationMs: this.getWorldLoadDurationMs() });
     }
 
     public getMapUrl(): string {
@@ -1098,6 +1168,7 @@ export class GameScene extends DirtyScene {
                 this.mapFile,
                 undefined,
                 urlManager.getStartPositionNameFromUrl(),
+                (position) => this.isPositionAllowedForCurrentUser(position),
             );
             this.CurrentPlayer.setPosition(startPosition.x, startPosition.y);
             this.CurrentPlayer.finishFollowingPath(true);
@@ -1169,11 +1240,20 @@ export class GameScene extends DirtyScene {
         this.shouldPublishScreenShareUnsubscriber?.();
         this.pinchManager?.destroy();
         this.emoteManager?.destroy();
+        this.entityAudioManager?.destroy();
         this.cameraManager?.destroy();
         this.mapEditorModeManager?.destroy();
         this.gameMapPropertiesListener?.destroy();
         this.pathfindingManager?.cleanup();
 
+        // A broadcast does not follow the user into the next room, but nothing said
+        // so: the action bar kept offering to stop it, and its analytics interval —
+        // opened with reopenOnReconnect — was resumed on the next room's socket as if
+        // the megaphone were still on. Guarded so an idle room change does not count
+        // as a stop.
+        if (get(requestedMegaphoneStore)) {
+            stopMegaphoneLive();
+        }
         this._broadcastService?.destroy().catch((e) => {
             console.error("Error while destroying broadcast service", e);
             Sentry.captureException(e);
@@ -1581,6 +1661,16 @@ export class GameScene extends DirtyScene {
     }
 
     /**
+     * Shows/hides the raised-hand indicator above a remote player's woka, resolving the woka from the
+     * numeric player id (derived from the SpaceUser's spaceUserId). The raise-hand state lives on the
+     * SpaceUser (see SpacePeerManager), so this also covers participants who joined the meeting after the
+     * hand was raised.
+     */
+    private setRemotePlayerRaisedHand(playerId: number, raised: boolean): void {
+        this.MapPlayersByKey.get(playerId)?.setRaisedHand(raised);
+    }
+
+    /**
      * Sends to the server an event emitted by one of the ActionableItems.
      */
     emitActionableEvent(itemId: number, eventName: string, state: unknown, parameters: unknown) {
@@ -1602,6 +1692,11 @@ export class GameScene extends DirtyScene {
      * @returns The calculated viewport or null if invalid
      */
     private calculateViewport(margin = 300): ViewportInterface | null {
+        if (!this.scene.scene.renderer) {
+            // The camera's worldView is empty without a renderer: sending it would replace the viewport of the
+            // joinRoom message with a 300 px square at the map origin.
+            return this.CurrentPlayer === undefined ? null : this.getHeadlessViewport();
+        }
         const camera = this.cameras.main;
         if (!camera) {
             return null;
@@ -1754,6 +1849,10 @@ export class GameScene extends DirtyScene {
 
     public getOutlineManager(): OutlineManager {
         return this.outlineManager;
+    }
+
+    public getEntityAudioManager(): EntityAudioManager {
+        return this.entityAudioManager;
     }
 
     /**
@@ -1918,6 +2017,19 @@ export class GameScene extends DirtyScene {
         }
     }
 
+    /**
+     * Whether the current user may stand at this position, i.e. it is not inside an area they do not have access to.
+     * Like AreaPermissions, users allowed to edit the map may go anywhere. Unlike the areas manager, this works as soon
+     * as the pusher answered, which is when the start position is chosen.
+     */
+    private isPositionAllowedForCurrentUser(position: PositionInterface): boolean {
+        const gameMapAreas = this.getGameMap().getWamFile()?.getGameMapAreas();
+        if (!this.connection || this.connection.userCanEdit || !gameMapAreas) {
+            return true;
+        }
+        return gameMapAreas.getForbiddenAreasOnPosition(position, this.connection.getAllTags()).length === 0;
+    }
+
     private initializeAreaManager() {
         if (!this.connection) {
             throw new Error("This should never happen");
@@ -1946,6 +2058,13 @@ export class GameScene extends DirtyScene {
             )
             .then(async (onConnect: OnConnectInterface) => {
                 this.connection = onConnect.connection;
+
+                // Subscribed before any await: the admin messages of the login come right after the connection.
+                // These streams are completed in the RoomConnection. No need to unsubscribe.
+                //eslint-disable-next-line rxjs/no-ignored-subscription, svelte/no-ignored-unsubscribe
+                this.connection.sendUserMessageStream.subscribe((message) => this.showUserMessage(message));
+                //eslint-disable-next-line rxjs/no-ignored-subscription, svelte/no-ignored-unsubscribe
+                this.connection.banUserMessageStream.subscribe((message) => this.ejectedUser(message));
 
                 // The serverDisconnected stream is completed in the RoomConnection. No need to unsubscribe.
                 //eslint-disable-next-line rxjs/no-ignored-subscription, svelte/no-ignored-unsubscribe
@@ -1992,6 +2111,7 @@ export class GameScene extends DirtyScene {
                     this.mapFile,
                     this.initPosition,
                     urlManager.getStartPositionNameFromUrl(),
+                    (position) => this.isPositionAllowedForCurrentUser(position),
                 );
 
                 this.createCurrentPlayer(startPosition);
@@ -2008,6 +2128,8 @@ export class GameScene extends DirtyScene {
 
                 videoStreamStore.forward(this._spaceRegistry.videoStreamStore);
                 screenShareStreamStore.forward(this._spaceRegistry.screenShareStreamStore);
+                raisedHandSectionsStore.forward(this._spaceRegistry.raisedHandSectionsStore);
+                mediaSynchronizedSpacesStore.forward(this._spaceRegistry.spacesSynchronizingMedia);
 
                 this.initExtensionModule();
 
@@ -2160,8 +2282,6 @@ export class GameScene extends DirtyScene {
 
                 this._sayManager = new SayManager(this.connection, this.CurrentPlayer);
 
-                userMessageManager.setReceiveBanListener(this.bannedUser.bind(this));
-
                 this.CurrentPlayer.on(hasMovedEventName, (event: HasPlayerMovedInterface) => {
                     this.handleCurrentPlayerHasMovedEvent(event);
                 });
@@ -2200,19 +2320,32 @@ export class GameScene extends DirtyScene {
                 this.gameMapFrontWrapper.setPosition(this.CurrentPlayer.x, this.CurrentPlayer.y);
 
                 this.emoteManager = new EmoteManager(this, this.connection);
+                this.entityAudioManager = new EntityAudioManager(this, this.connection);
+                this.CurrentPlayer.on(hasMovedEventName, () => this.entityAudioManager.onPlayerMoved());
 
                 const context = audioContextManager.getContext();
 
+                let previousState: AudioContextState | undefined;
                 const onStateChange = () => {
                     const state = context.state;
+                    const wasRunning = previousState === "running";
+                    previousState = state;
 
                     // Note: some browsers (Vivaldi / Brave) will start in "running" state directly despite
                     // no user activation and this will not stop them from blocking WebRTC sound afterwards.
                     if (state === "suspended") {
                         audioInterruptedStore.setInterrupted(false);
-                        this.unregisterAudioContextPlaybackRetry = audioPlaybackStore.register(() => {
-                            context.resume().catch((e) => console.error(e));
-                        });
+                        const outputSwitch = wasRunning ? pendingSinkRequests(context) : undefined;
+                        if (outputSwitch) {
+                            // Chrome suspends a running context while it switches the audio output, and resumes it
+                            // after. Not blocked playback: flagging it sets the SOUND_BLOCKED status, which leaves the
+                            // bubble. Resumed here too, in case the switch failed half way.
+                            outputSwitch.then(() => context.resume()).catch((e) => console.error(e));
+                        } else {
+                            this.unregisterAudioContextPlaybackRetry = audioPlaybackStore.register(() => {
+                                context.resume().catch((e) => console.error(e));
+                            });
+                        }
                     } else if (state === "running") {
                         this.unregisterAudioContextPlaybackRetry?.();
                         this.unregisterAudioContextPlaybackRetry = undefined;
@@ -2599,6 +2732,46 @@ export class GameScene extends DirtyScene {
         );
 
         this.unsubscribers.push(
+            isHandRaisedStore.subscribe((raised) => {
+                // Reflect the local user's raised hand on their own woka immediately. The state reaches the
+                // other participants through the space state (see SpacePeerManager.synchronizeMediaState), which
+                // drives both their video tile badge and the indicator above their woka on the map.
+                this.CurrentPlayer?.setRaisedHand(raised);
+            }),
+        );
+
+        // Drive the raised-hand indicator above REMOTE players' wokas from the raised-hands queue of the space state.
+        // The store is keyed by numeric player id (derived from each participant's spaceUserId).
+        this.unsubscribers.push(
+            raisedHandPlayerIdsStore.subscribe((raisedPlayerIds) => {
+                for (const playerId of raisedPlayerIds) {
+                    if (!this.previousRaisedHandPlayerIds.has(playerId)) {
+                        this.setRemotePlayerRaisedHand(playerId, true);
+                    }
+                }
+                for (const playerId of this.previousRaisedHandPlayerIds) {
+                    if (!raisedPlayerIds.has(playerId)) {
+                        this.setRemotePlayerRaisedHand(playerId, false);
+                    }
+                }
+                this.previousRaisedHandPlayerIds = new Set(raisedPlayerIds);
+            }),
+        );
+
+        // Automatically lower the hand when leaving the conversation: the raise-hand button is only shown during a
+        // meeting, so a hand left raised on leave could otherwise no longer be lowered by the user.
+        this.unsubscribers.push(
+            isInRemoteConversation.subscribe((inConversation) => {
+                if (!inConversation) {
+                    requestedHandRaiseState.lowerAll();
+                }
+            }),
+        );
+        // A zone whose option says no needs no safety net: the hand is raised per space, so walking into such a
+        // zone leaves the hand raised elsewhere (e.g. in the bubble) alone, and a space the hand is up in stays
+        // offered by the button so it can still be lowered (see raiseHandSpacesStore).
+
+        this.unsubscribers.push(
             followUsersColorStore.subscribe((color) => {
                 if (color !== undefined) {
                     this.CurrentPlayer.setFollowOutlineColor(color);
@@ -2651,7 +2824,9 @@ export class GameScene extends DirtyScene {
         );
 
         this.unsubscribers.push(
-            lastNewMediaDeviceDetectedStore.subscribe((devices) => {
+            lastNewMediaDeviceDetectedStore.subscribe((newDevices) => {
+                // Filtered first: the click handler below picks devices by label from this same list
+                const devices = devicesToOffer(newDevices);
                 if (devices.length === 0) return;
                 const ignoredNewMediaDeviceIds = localUserStore.getIgnoredNewMediaDeviceIds();
                 // filter device by name tu avoid multiple notification for the same device
@@ -2727,7 +2902,18 @@ export class GameScene extends DirtyScene {
             }),
         );
 
-        this.isLiveStreamingUnsubscriber = this.spaceRegistry.isLiveStreamingStore.subscribe((isStreaming) => {
+        const LOUD_ENVIRONMENT_TOAST_ID = "loud-environment-toast";
+        this.unsubscribers.push(
+            loudEnvironmentWarningStore.subscribe((show) => {
+                if (show) {
+                    toastStore.addToast(LoudEnvironmentToast, {}, LOUD_ENVIRONMENT_TOAST_ID);
+                } else {
+                    toastStore.removeToast(LOUD_ENVIRONMENT_TOAST_ID);
+                }
+            }),
+        );
+
+        this.isLiveStreamingUnsubscriber = this.spaceRegistry.isLiveStreamingAudioStore.subscribe((isStreaming) => {
             if (isStreaming) {
                 this.enableVoiceIndicator();
             } else {
@@ -2826,7 +3012,10 @@ ${escapedMessage}
                 this.popUpElements.set(openPopupEvent.popupId, domElement);
 
                 // Analytics tracking for popups
-                analyticsClient.openedPopup(openPopupEvent.targetObject, openPopupEvent.popupId);
+                analyticsClient.trackAdminEvent("popup.opened", {
+                    targetRectangle: openPopupEvent.targetObject,
+                    id: openPopupEvent.popupId,
+                });
             }),
         );
 
@@ -3322,6 +3511,10 @@ ${escapedMessage}
                 for (const eventTile of eventTiles) {
                     this.gameMapFrontWrapper.putTile(eventTile.tile, eventTile.x, eventTile.y, eventTile.layer);
                 }
+                // Tiles changed by a script must repaint even when nothing else moves (the render loop
+                // skips frames until a scene is dirty; without this, script-driven tile changes only
+                // became visible on the next local player input).
+                this.markDirty();
             }),
         );
         iframeListener.registerAnswerer("enablePlayersTracking", (enablePlayersTrackingEvent, source) => {
@@ -3539,6 +3732,12 @@ ${escapedMessage}
         });
 
         iframeListener.registerAnswerer("teleportPlayerTo", (message) => {
+            // Teleporting skips the colliders: check the access rights of the areas at the destination ourselves.
+            if (!this.isPositionAllowedForCurrentUser(message)) {
+                throw new Error(
+                    "WA.player.teleport: the target position is inside an area the user does not have access to.",
+                );
+            }
             this.CurrentPlayer.teleportTo(message.x, message.y);
         });
 
@@ -3797,48 +3996,57 @@ ${escapedMessage}
     }
 
     /**
-     * Analyze the #moveTo parameter in the URL.
-     * This function will try to move the player
+     * Analyze the #moveTo parameter in the URL and walk the player there (see walkToMoveTarget).
+     */
+    private tryMovePlayerWithMoveToParameter(): void {
+        const moveToParam = urlManager.getHashParameter("moveTo");
+        if (moveToParam && this.walkToMoveTarget(moveToParam)) {
+            urlManager.clearHashParameter();
+        }
+    }
+
+    /**
+     * Walk the player to a #moveTo target:
      *
      * - to the X,Y coordinates if this is X,Y coordinates
      * - if not, to the WAM area with the given name
      * - if not found, to the Tiled area with the given name
      * - if not found, to the Tiled layer with the given name
+     *
+     * Returns false when the target cannot be found. Also used by the agenda's "Go there", for a meeting in the
+     * current map, without going through the URL.
      */
-    private tryMovePlayerWithMoveToParameter(): void {
-        const moveToParam = urlManager.getHashParameter("moveTo");
-        if (moveToParam) {
-            try {
-                let endPos: { x: number; y: number };
-                const posFromParam = StringUtils.parsePointFromParam(moveToParam);
-                if (posFromParam) {
-                    endPos = posFromParam;
+    public walkToMoveTarget(target: string): boolean {
+        try {
+            let endPos: { x: number; y: number };
+            const posFromParam = StringUtils.parsePointFromParam(target);
+            if (posFromParam) {
+                endPos = posFromParam;
+            } else {
+                // First, try by id
+                let areaData = this.gameMapFrontWrapper.getAreas()?.get(target);
+                if (!areaData) {
+                    areaData = this.gameMapFrontWrapper.getAreaByName(target);
+                }
+                if (areaData) {
+                    endPos = MathUtils.randomPositionFromRect(areaData);
                 } else {
-                    // First, try by id
-                    let areaData = this.gameMapFrontWrapper.getAreas()?.get(moveToParam);
-                    if (!areaData) {
-                        areaData = this.gameMapFrontWrapper.getAreaByName(moveToParam);
-                    }
-                    if (areaData) {
-                        endPos = MathUtils.randomPositionFromRect(areaData);
+                    const destinationObject = this.gameMapFrontWrapper.getObjectWithName(target);
+                    if (destinationObject) {
+                        endPos = destinationObject;
                     } else {
-                        const destinationObject = this.gameMapFrontWrapper.getObjectWithName(moveToParam);
-                        if (destinationObject) {
-                            endPos = destinationObject;
-                        } else {
-                            endPos = this.pathfindingManager.mapTileUnitToPixels(
-                                this.gameMapFrontWrapper.getRandomPositionFromLayer(moveToParam),
-                            );
-                        }
+                        endPos = this.pathfindingManager.mapTileUnitToPixels(
+                            this.gameMapFrontWrapper.getRandomPositionFromLayer(target),
+                        );
                     }
                 }
-
-                this.moveTo(endPos, false, WOKA_SPEED * 2.5).catch((e) => console.warn(e));
-
-                urlManager.clearHashParameter();
-            } catch (err) {
-                console.warn(`Cannot proceed with moveTo command:\n\t-> ${err}`);
             }
+
+            this.moveTo(endPos, false, WOKA_SPEED * 2.5).catch((e) => console.warn(e));
+            return true;
+        } catch (err) {
+            console.warn(`Cannot proceed with moveTo command:\n\t-> ${err}`);
+            return false;
         }
     }
 
@@ -4014,7 +4222,7 @@ ${escapedMessage}
 
         try {
             await this.moveTo({ x: centerX, y: centerY }, true, WOKA_SPEED * 2.5);
-            analyticsClient.goToPersonalDesk();
+            analyticsClient.trackAdminEvent("personal_desk.entered");
         } catch (error) {
             console.warn("Error while moving to personal desk", error);
             warningMessageStore.addWarningMessage(get(LL).actionbar.personalDesk.errorMoving(), { closable: true });
@@ -4178,20 +4386,26 @@ ${escapedMessage}
         iframeListener.hasPlayerMoved(event);
     }
 
+    /**
+     * In the very special case where we have no renderer (bots run Phaser headless), the camera never follows the
+     * Woka: its worldView stays empty at the map origin. We set the viewport to something very large around the Woka
+     * to make sure it sees everything around (useful for bots, even if so far, it is a trick).
+     * The Woka's position, not lastMoveEventSent: that one is a placeholder at (-1000, -1000) until the first move,
+     * and a bot that never moves would only ever see the top-left corner of the map.
+     */
+    private getHeadlessViewport(): ViewportInterface {
+        const { x, y } = this.CurrentPlayer;
+        return {
+            left: x - 3_000,
+            top: y - 3_000,
+            right: x + 3_000,
+            bottom: y + 3_000,
+        };
+    }
+
     private getViewport(forceRecomputeCamera = false): ViewportInterface {
         if (!this.scene.scene.renderer) {
-            const x = this.lastMoveEventSent?.x ?? this.CurrentPlayer.x;
-            const y = this.lastMoveEventSent?.y ?? this.CurrentPlayer.y;
-
-            // In the very special case where we have no renderer, the viewport will not move along the Woka.
-            // We need to adjust it manually. We set it to something very large to make sure the Woka sees
-            // everything around (useful for bots, even if so far, it is a trick)
-            return {
-                left: x - 3_000,
-                top: y - 3_000,
-                right: x + 3_000,
-                bottom: y + 3_000,
-            };
+            return this.getHeadlessViewport();
         }
 
         const camera = this.cameras.main;
@@ -4267,6 +4481,11 @@ ${escapedMessage}
         }
         if (addPlayerData.availabilityStatus !== 0) {
             player.setAvailabilityStatus(addPlayerData.availabilityStatus, true);
+        }
+        // If this player already had their hand raised before their woka was created (e.g. we just joined the
+        // meeting, or the SpaceUser arrived before the woka), reflect it immediately.
+        if (get(raisedHandPlayerIdsStore).has(player.userId)) {
+            player.setRaisedHand(true);
         }
         this.MapPlayersByKey.set(player.userId, player);
         player.updatePosition(addPlayerData.position);
@@ -4427,15 +4646,38 @@ ${escapedMessage}
         this.groups.set(groupPositionMessage.groupId, conversationBubble);
     }
 
+    /**
+     * Displays a message sent by an admin: a text or an audio message.
+     */
+    private showUserMessage({ type, message }: SendUserMessage) {
+        if (type === "message") {
+            textMessageStore.addMessage(message);
+            this.playSound("new-message", 0.2);
+        } else if (type === "audio") {
+            soundPlayingStore.playSound(UPLOADER_URL + message);
+        }
+    }
+
     //todo: put this into an 'orchestrator' scene (EntryScene?)
-    private bannedUser() {
+    /**
+     * A ban is persisted by the admin; a kick only ejects the user from the room, a reload brings them back.
+     */
+    private ejectedUser({ type, message: reason }: BanUserMessage) {
+        const kind = type === "kicked" ? "kicked" : "banned";
+        const texts = get(LL).report[kind];
         errorScreenStore.setError(
             ErrorScreenMessage.fromPartial({
                 type: "error",
-                code: "USER_BANNED",
-                title: "BANNED",
-                subtitle: "You were banned from WorkAdventure",
-                details: "If you want more information, you may contact us at: hello@workadventu.re",
+                code: kind === "banned" ? "USER_BANNED" : "USER_KICKED",
+                title: texts.title(),
+                subtitle: texts.subtitle(),
+                // One line each: the reason, then (for a ban only) how to reach the admins.
+                details: [
+                    reason.trim() === "" ? "" : get(LL).report.reasonGiven({ reason }),
+                    kind === "banned" ? get(LL).report.banned.details() : "",
+                ]
+                    .filter((line) => line !== "")
+                    .join("\n"),
             }),
         );
 

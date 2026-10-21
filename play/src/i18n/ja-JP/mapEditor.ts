@@ -87,6 +87,9 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
             defaultButtonLabel: "ミュージックの再生",
             error: "サウンドを読み込めませんでした",
             actionButtonLabel: "ミュージックを再生",
+            playForAllUsersLabel: "マップ上のすべてのユーザーに再生",
+            audibleRadiusLabel: "可聴半径（ピクセル）",
+            audibleRadiusPlaceholder: "空欄の場合はどこでも聞こえます",
         },
         openWebsite: {
             hideUrlLabel: "Hide URL",
@@ -140,6 +143,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
 
         chatEnabled: "専用チャットチャンネルを開設",
         allowTalking: "会話とバブルの形成を許可する",
+        raiseHandEnabled: "挙手を許可する",
         seeAttendees: "参加者を表示",
         start: {
             label: "入口エリア",
@@ -308,6 +312,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 startWithAudioMuted: "マイクをミュートした状態で開始",
                 startWithVideoMuted: "ビデオを閉じた状態で開始",
                 disableChat: "チャットを無効化",
+                raiseHandEnabled: "挙手を許可する",
                 livekitRoomAdminTag: "ミーティングルームのモデレータータグ",
                 cancel: "キャンセル",
                 validate: "有効",
@@ -456,7 +461,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 audienceVideoFeedbackActivated: "オーディトリアムモード",
                 audienceVideoFeedbackActivatedDisabled: "オーディトリアムモード",
                 audienceVideoFeedbackActivatedHelper:
-                    "オーディトリアムモードが有効化されました：ルーム/ワールド内のすべてのユーザー（カメラとマイクが有効化されている）のカメラとマイクストリームを受信します。ただし、参加者は他の参加者を見ることができません。デフォルトでは無効です。",
+                    "オーディトリアムモードが有効化されました：ルーム/ワールド内のすべてのユーザー（カメラが有効化されている）のカメラストリームを、音声なしで受信します。ただし、参加者は他の参加者を見ることができません。デフォルトでは無効です。",
                 error: {
                     title: "タイトルを入力してください",
                     save: {
