@@ -1,8 +1,8 @@
 # The Everywhere Office — lokale ontwikkelomgeving
 
 Deze map bevat een lokale, geïsoleerde kopie van The Everywhere Office. De
-WorkAdventure-code staat op dezelfde commit als productie (`a65679fd6`), maar
-de containers, volumes, auth-database en configuratie zijn lokaal.
+`teo-dev`-branch kan vooruitlopen op productie terwijl een upstream-update
+wordt getest. Containers, volumes, auth-database en configuratie zijn lokaal.
 
 De stack hergebruikt een bestaande lokale Docker/Traefik-installatie. Er wordt
 daarom geen tweede reverse proxy gestart en er worden geen extra hostpoorten
@@ -162,6 +162,7 @@ Werk altijd vanaf een schone `teo-dev`-branch:
 git switch teo-dev
 git fetch upstream
 git merge upstream/master
+# Werk de vastgezette runtime-images bij zoals hieronder beschreven.
 ./dev/up.sh
 ./dev/check.sh
 ```
@@ -187,6 +188,33 @@ git switch teo-dev
 De auth-repository volgt hetzelfde model apart vanuit `auth/`. Merge een
 auth-wijziging pas naar diens `main` nadat de combinatie van beide `teo-dev`-
 branches lokaal is getest.
+
+### WorkAdventure-images vastzetten
+
+De frontend wordt uit deze repository gebouwd. `back`, `uploader` en
+`map-storage` gebruiken officiële WorkAdventure-images die in
+`contrib/docker/docker-compose.yaml` met een digest zijn vastgezet. De huidige
+digests zijn gebouwd uit upstream-commit `774acc207`. Daardoor gebruiken dev en
+productie exact dezelfde runtime-images en kan de bewegende tag `master` niet
+tussen testen en deployen veranderen.
+
+Werk de digests pas bij na een nieuwe upstream-merge:
+
+```sh
+docker pull thecodingmachine/workadventure-back:master
+docker pull thecodingmachine/workadventure-uploader:master
+docker pull thecodingmachine/workadventure-map-storage:master
+
+docker image inspect \
+  thecodingmachine/workadventure-back:master \
+  thecodingmachine/workadventure-uploader:master \
+  thecodingmachine/workadventure-map-storage:master \
+  --format '{{index .RepoDigests 0}} {{index .Config.Labels "org.opencontainers.image.revision"}}'
+```
+
+Controleer dat het revision-label gelijk is aan de gemergde upstream-commit,
+vervang daarna de drie digests in het Compose-bestand en voer opnieuw
+`./dev/up.sh` en `./dev/check.sh` uit.
 
 ## Lokale afwijkingen van productie
 

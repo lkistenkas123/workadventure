@@ -170,7 +170,8 @@ services:
     restart: ${RESTART_POLICY}
 
   back:
-    image: thecodingmachine/workadventure-back:${VERSION}
+    # Built from upstream WorkAdventure commit 774acc207.
+    image: thecodingmachine/workadventure-back@sha256:3581f0dff2a011e6a6bb94370b742a4244e0d59b2ec58553eba7274a070e61e7
     environment:
       - PLAY_URL=https://${DOMAIN}
       - MINIMUM_DISTANCE=${MINIMUM_DISTANCE}
@@ -229,7 +230,8 @@ services:
     restart: ${RESTART_POLICY}
 
   uploader:
-    image: thecodingmachine/workadventure-uploader:${VERSION}
+    # Built from upstream WorkAdventure commit 774acc207.
+    image: thecodingmachine/workadventure-uploader@sha256:9691023c5628692fff21bac417f99ce004e4c7f93192202be4d09eb5f2c6604e
     environment:
       - UPLOADER_URL=https://${DOMAIN}/uploader
       #AWS
@@ -294,7 +296,8 @@ services:
     restart: ${RESTART_POLICY}
 
   map-storage:
-    image: thecodingmachine/workadventure-map-storage:${VERSION}
+    # Built from upstream WorkAdventure commit 774acc207.
+    image: thecodingmachine/workadventure-map-storage@sha256:f094f0178e03063f26fec44f3c7b49c75444662ed34b5772b2b18e35cfaf0feb
     environment:
       API_URL: back:50051
       PROMETHEUS_AUTHORIZATION_TOKEN: "$PROMETHEUS_AUTHORIZATION_TOKEN"
