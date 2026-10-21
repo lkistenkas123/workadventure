@@ -117,11 +117,10 @@ Daarvoor doet `docker-compose.dev.yaml` twee dingen:
    `NODE_EXTRA_CA_CERTS` door Node vertrouwd.
 
 In dev is `RESEND_API_KEY` leeg. Er wordt dus geen echte e-mail verstuurd. Na
-het invullen van een e-mailadres staat de magic link in:
-
-```sh
-docker logs teo-dev-auth
-```
+het invullen van een e-mailadres verschijnt de magic link direct als knop op
+de bevestigingspagina. De knop opent een nieuw tabblad; het oorspronkelijke
+tabblad rondt de OpenID-login daarna automatisch af. De link wordt daarnaast
+nog in `docker logs teo-dev-auth` geschreven voor troubleshooting.
 
 De lokale auth-database staat in het volume `teo-dev_teo-auth-data` en bevat
 geen productieaccounts.
