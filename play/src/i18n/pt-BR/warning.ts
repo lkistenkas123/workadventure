@@ -6,11 +6,9 @@ const warning: BaseTranslation = {
     limit: "Este mundo está perto do seu limite!",
     accessDenied: {
         camera: "Acesso à câmera negado. Clique aqui e verifique as permissões do seu navegador.",
-        screenSharing: "Compartilhamento de tela negado. Clique aqui e verifique as permissões do seu navegador.",
         teleport: "Você não tem direito de teleportar este usuário.",
         room: "Acesso a sala negado. Você não tem permissão para entrar nesta sala.",
     },
-    importantMessage: "Mensagem importante",
     connectionLost: "Conexão perdida. Reconectando...",
     connectionLostTitle: "Conexão perdida",
     connectionLostSubtitle: "Reconectando",
@@ -21,6 +19,7 @@ const warning: BaseTranslation = {
     mapEditorNotEnabled: "O editor de mapas não está habilitado neste mundo.",
     backgroundProcessing: {
         failedToApply: "Falha ao aplicar efeitos de fundo",
+        notSupportedOnThisBrowser: "Efeitos de fundo não são suportados neste navegador",
     },
     popupBlocked: {
         title: "Bloqueador de pop-up",

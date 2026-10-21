@@ -1,6 +1,6 @@
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
+import type { Plugin } from "vite";
 import { defineConfig, loadEnv } from "vite";
 import { svelte, vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
@@ -9,6 +9,37 @@ import tailwindcss from "@tailwindcss/vite";
 import Icons from "unplugin-icons/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+import { apiVersionHash } from "../libs/messages/src/JsonMessages/ApiVersion";
+
+// Matrix is only for logged-in users (GameManager loads it with import()): keep the SDK out of the chunks every
+// visitor downloads. A single value import of it anywhere on the startup path would silently bring it all back.
+const matrixStaysLazy: Plugin = {
+    name: "workadventure-matrix-stays-lazy",
+    apply: "build",
+    generateBundle(_options, bundle) {
+        const visited = new Set<string>();
+        const visit = (fileName: string) => {
+            const chunk = bundle[fileName];
+            if (visited.has(fileName) || chunk?.type !== "chunk") {
+                return;
+            }
+            visited.add(fileName);
+            // EventType (lib/@types/event.js, with its NamespacedValue import) is tiny and allowed.
+            const leak = chunk.moduleIds.find((id) =>
+                /\/matrix-js-sdk\/lib\/(?!@types\/|NamespacedValue\.js)/.test(id),
+            );
+            if (leak) {
+                this.error(`${leak} is in the startup chunk ${fileName}: load Matrix code with import().`);
+            }
+            chunk.imports.forEach(visit);
+        };
+        for (const chunk of Object.values(bundle)) {
+            if (chunk.type === "chunk" && chunk.isEntry) {
+                visit(chunk.fileName);
+            }
+        }
+    },
+};
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -16,9 +47,14 @@ export default defineConfig(({ mode }) => {
     // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
     const env = loadEnv(mode, process.cwd(), "");
     const config = {
+        // Relative base: every URL Vite emits resolves against the file that references it, so the build can be
+        // served from any origin (the pusher itself, or an assets domain set at runtime with ASSETS_URL).
+        base: "./",
         server: {
             host: "0.0.0.0",
             port: 8080,
+            // When the page loads its modules from another origin (ASSETS_URL), asset URLs must be absolute.
+            origin: env.ASSETS_URL || undefined,
             ws: {
                 // workaround for development in docker
                 clientPort: 80,
@@ -45,8 +81,15 @@ export default defineConfig(({ mode }) => {
             assetsInclude: ["**/*.tflite", "**/*.wasm"],
         },
         plugins: [
+            {
+                // The pusher only uses an index.html built for the same protocol as its own (see FrontAssets.ts).
+                name: "workadventure-api-version",
+                transformIndexHtml: () => [
+                    { tag: "meta", attrs: { name: "wa-api-version", content: apiVersionHash }, injectTo: "head" },
+                ],
+            },
+            matrixStaysLazy,
             tailwindcss(),
-            mediapipe_workaround(),
             noiseSuppressionAudioWorkletVitePlugin(),
             nodePolyfills({
                 include: ["events", "buffer"],
@@ -94,7 +137,7 @@ export default defineConfig(({ mode }) => {
             },
         },
         optimizeDeps: {
-            exclude: ["svelte-modals", "@mediapipe/selfie_segmentation"],
+            exclude: ["svelte-modals"],
             esbuildOptions: {
                 define: {
                     global: "globalThis",
@@ -132,21 +175,3 @@ export default defineConfig(({ mode }) => {
     }
     return config;
 });
-
-// use to fix the module export issue with mediapipe ==> https://github.com/tensorflow/tfjs/issues/7165
-// TODO: remove this when we migrate to mediapipe/tasks-vision
-function mediapipe_workaround() {
-    return {
-        name: "mediapipe_workaround",
-        load(id: string) {
-            const filePath = id.split("?")[0];
-            if (path.basename(filePath) === "selfie_segmentation.js" && fs.existsSync(filePath)) {
-                let code = fs.readFileSync(filePath, "utf-8");
-                code += "\nexport const SelfieSegmentation = globalThis.SelfieSegmentation;\n";
-                return { code };
-            } else {
-                return null;
-            }
-        },
-    };
-}

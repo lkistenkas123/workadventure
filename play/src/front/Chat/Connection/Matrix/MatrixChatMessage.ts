@@ -5,14 +5,17 @@ import { derived, get, readable, writable } from "svelte/store";
 import { v4 as uuidv4 } from "uuid";
 import { MapStore } from "@workadventure/store-utils";
 import type {
+    ChatAttachmentStatus,
     ChatMessage,
+    ChatMessageAttachment,
     ChatMessageContent,
     ChatMessageType,
     ChatThread,
     ChatThreadSummary,
     ChatUser,
 } from "../ChatConnection";
-import { chatUserFactoryFromRoom } from "./MatrixChatUser";
+import { canRenderImageOrVideoInline } from "../../../Utils/InlineMimeType";
+import { chatUserFactoryFromEvent } from "./MatrixChatUser";
 import { MatrixChatMessageReaction } from "./MatrixChatMessageReaction";
 import { MatrixChatRelation } from "./MatrixChatRelation";
 import { resolveAttachmentMediaFromEvent, resolveImageMediaFromEvent } from "./MatrixMediaResolver";
@@ -36,6 +39,8 @@ export class MatrixChatMessage implements ChatMessage {
     readonly canDelete: Writable<boolean>;
     threadSummary = writable<ChatThreadSummary | null>(null);
     openThread: (() => Promise<ChatThread | undefined>) | undefined;
+    readonly attachment: ChatMessageAttachment | undefined;
+    private readonly attachmentStatus = writable<ChatAttachmentStatus>({ state: "ready" });
     private imageMediaCleanup: () => void = () => undefined;
     private imageMediaAbortController: AbortController | undefined;
     private attachmentMediaCleanup: () => void = () => undefined;
@@ -61,6 +66,11 @@ export class MatrixChatMessage implements ChatMessage {
     ) {
         this.id = event.getId() ?? uuidv4();
         this.type = this.mapMatrixMessageTypeToChatMessage();
+        const size: unknown = event.getOriginalContent().info?.size;
+        this.attachment =
+            this.type === "text"
+                ? undefined
+                : { status: this.attachmentStatus, size: typeof size === "number" ? size : undefined };
         this.date = event.getDate();
         this.sender = this.getSender();
         this.isMyMessage = this.room.client.getUserId() === event.getSender();
@@ -100,8 +110,7 @@ export class MatrixChatMessage implements ChatMessage {
     }
 
     private getSender() {
-        const senderUserId = this.event.getSender();
-        return senderUserId ? chatUserFactoryFromRoom(this.room, senderUserId) : undefined;
+        return chatUserFactoryFromEvent(this.room, this.event);
     }
 
     private initMessageContent(): Writable<ChatMessageContent> {
@@ -140,7 +149,6 @@ export class MatrixChatMessage implements ChatMessage {
                 body: content.body,
                 url: this.room.client.mxcUrlToHttp(content.url ?? content.file?.url) ?? undefined,
                 thumbnailUrl: this.room.client.mxcUrlToHttp(content.info?.thumbnail_url) ?? undefined,
-                mediaState: content.file !== undefined ? "loading" : "ready",
             };
         }
 
@@ -148,7 +156,6 @@ export class MatrixChatMessage implements ChatMessage {
             return {
                 body: content.body,
                 url: this.room.client.mxcUrlToHttp(content.url ?? content.file?.url) ?? undefined,
-                mediaState: content.file !== undefined ? "loading" : "ready",
             };
         }
 
@@ -169,7 +176,7 @@ export class MatrixChatMessage implements ChatMessage {
     }
 
     private async resolveImageMedia(signal: AbortSignal): Promise<void> {
-        this.content.update((content) => ({ ...content, mediaState: "loading", mediaErrorKind: undefined }));
+        this.attachmentStatus.set({ state: "loading" });
 
         try {
             const media = await resolveImageMediaFromEvent(this.event, this.room.client, signal);
@@ -183,18 +190,13 @@ export class MatrixChatMessage implements ChatMessage {
                 ...content,
                 url: media.sourceUrl,
                 thumbnailUrl: media.thumbnailUrl ?? media.sourceUrl,
-                mediaErrorKind: media.error,
-                mediaState: media.error ? "error" : "ready",
             }));
+            this.attachmentStatus.set(media.error ? { state: "error", error: media.error } : { state: "ready" });
         } catch (error) {
             if (error instanceof DOMException && error.name === "AbortError") {
                 return;
             }
-            this.content.update((content) => ({
-                ...content,
-                mediaState: "error",
-                mediaErrorKind: "download",
-            }));
+            this.attachmentStatus.set({ state: "error", error: "download" });
         }
     }
 
@@ -216,7 +218,7 @@ export class MatrixChatMessage implements ChatMessage {
     }
 
     private async resolveAttachmentMedia(signal: AbortSignal): Promise<void> {
-        this.content.update((content) => ({ ...content, mediaState: "loading", mediaErrorKind: undefined }));
+        this.attachmentStatus.set({ state: "loading" });
 
         try {
             const media = await resolveAttachmentMediaFromEvent(this.event, this.room.client, signal);
@@ -226,21 +228,13 @@ export class MatrixChatMessage implements ChatMessage {
             }
 
             this.attachmentMediaCleanup = media.cleanup;
-            this.content.update((content) => ({
-                ...content,
-                url: media.sourceUrl,
-                mediaErrorKind: media.error,
-                mediaState: media.error ? "error" : "ready",
-            }));
+            this.content.update((content) => ({ ...content, url: media.sourceUrl }));
+            this.attachmentStatus.set(media.error ? { state: "error", error: media.error } : { state: "ready" });
         } catch (error) {
             if (error instanceof DOMException && error.name === "AbortError") {
                 return;
             }
-            this.content.update((content) => ({
-                ...content,
-                mediaState: "error",
-                mediaErrorKind: "download",
-            }));
+            this.attachmentStatus.set({ state: "error", error: "download" });
         }
     }
 
@@ -323,18 +317,20 @@ export class MatrixChatMessage implements ChatMessage {
         return this.room.client.mxcUrlToHttp(url);
     }
     private mapMatrixMessageTypeToChatMessage() {
-        const matrixMessageType = this.event.getOriginalContent().msgtype;
-        switch (matrixMessageType) {
+        const content = this.event.getOriginalContent();
+        switch (content.msgtype) {
             case "m.text":
                 return "text";
+            // An attachment whose filename and mimetype disagree is shown as a plain file instead
+            // of being rendered, the way Element does it.
             case "m.image":
-                return "image";
+                return canRenderImageOrVideoInline(content) ? "image" : "file";
+            case "m.video":
+                return canRenderImageOrVideoInline(content) ? "video" : "file";
             case "m.file":
                 return "file";
             case "m.audio":
                 return "audio";
-            case "m.video":
-                return "video";
         }
         return "text";
     }

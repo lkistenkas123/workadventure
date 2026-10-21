@@ -7,11 +7,9 @@ const warning: DeepPartial<Translation["warning"]> = {
     limit: "Thế giới này sắp đạt giới hạn!",
     accessDenied: {
         camera: "Quyền truy cập camera bị từ chối. Bấm vào đây và kiểm tra quyền trong trình duyệt của bạn.",
-        screenSharing: "Chia sẻ màn hình bị từ chối. Bấm vào đây và kiểm tra quyền trong trình duyệt của bạn.",
         teleport: "Bạn không có quyền dịch chuyển tới người dùng này.",
         room: "Truy cập phòng bị từ chối. Bạn không được phép vào phòng này.",
     },
-    importantMessage: "Thông báo quan trọng",
     connectionLost: "Mất kết nối. Đang kết nối lại...",
     connectionLostTitle: "Mất kết nối",
     connectionLostSubtitle: "Đang kết nối lại",
@@ -27,6 +25,7 @@ const warning: DeepPartial<Translation["warning"]> = {
     },
     backgroundProcessing: {
         failedToApply: "Không thể áp dụng hiệu ứng nền",
+        notSupportedOnThisBrowser: "Trình duyệt này không hỗ trợ hiệu ứng nền",
     },
     duplicateUserConnected: {
         title: "Đã kết nối ở nơi khác",

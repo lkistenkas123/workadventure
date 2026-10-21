@@ -38,9 +38,11 @@ class MatrixProvider {
     private adminRateLimitOverridePromise: Promise<void> | undefined;
 
     constructor() {
-        this.ensureAdminRateLimitOverridden().catch((error) => {
-            console.error("Failed to override admin account ratelimit:", error);
-        });
+        if (MATRIX_API_URI && MATRIX_ADMIN_USER && MATRIX_ADMIN_PASSWORD && MATRIX_DOMAIN) {
+            this.ensureAdminRateLimitOverridden().catch((error) => {
+                console.error("Failed to override admin account ratelimit:", error);
+            });
+        }
     }
 
     private async getAxios(): Promise<AxiosInstance> {

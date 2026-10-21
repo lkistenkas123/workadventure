@@ -6,6 +6,7 @@ import LL from "../../i18n/i18n-svelte";
 import { VideoBox } from "../Space/VideoBox";
 import type { Streamable } from "../Space/Streamable";
 import { touchScreenManager } from "../Touch/TouchScreenManager";
+import { localEncoderStatsStore } from "../WebRtc/LocalEncoderStats";
 import { screenSharingLocalVideoBox } from "./ScreenSharingStore";
 
 import { highlightedEmbedScreen } from "./HighlightedEmbedScreenStore";
@@ -18,6 +19,7 @@ import {
     cameraEnergySavingStore,
     inLivekitStore,
     isListenerStore,
+    isSpeakerStore,
     listenerSharingCameraStore,
     localStreamStore,
     localVoiceIndicatorStore,
@@ -77,7 +79,6 @@ export const myCameraPeerStore: Readable<VideoBox> = derived([LL], ([$LL], set) 
         flipX: true,
         muteAudio: writable(true),
         displayMode: "cover" as const,
-        displayInPictureInPictureMode: false,
         usePresentationMode: false,
         spaceUserId: undefined,
         closeStreamable: () => {},
@@ -85,6 +86,7 @@ export const myCameraPeerStore: Readable<VideoBox> = derived([LL], ([$LL], set) 
         volume: writable(1),
         videoType: "video",
         webrtcStats: undefined,
+        senderStats: localEncoderStatsStore.video,
     };
     const videoBox = VideoBox.fromLocalStreamable(streamable, -2);
     set(videoBox);
@@ -109,7 +111,6 @@ const listenerBoxStreamable: Streamable = {
     flipX: false,
     muteAudio: writable(true),
     displayMode: "fit",
-    displayInPictureInPictureMode: false,
     usePresentationMode: false,
     spaceUserId: undefined,
     closeStreamable: () => {},
@@ -160,7 +161,7 @@ export const isInRemoteConversation = derived(
     },
 );
 
-const isInActiveConversationStore = derived(
+export const isInActiveConversationStore = derived(
     [isInRemoteConversation, currentPlayerGroupIdStore, inLivekitStore],
     ([$isInRemoteConversation, $currentPlayerGroupIdStore, $inLivekitStore]) =>
         $isInRemoteConversation || $currentPlayerGroupIdStore !== undefined || $inLivekitStore,
@@ -185,6 +186,7 @@ function createStreamableCollectionStore(): Readable<Map<string, VideoBox>> {
             isInActiveConversationStore,
             isListenerStore,
             listenerSharingCameraStore,
+            isSpeakerStore,
             availabilityStatusStore,
         ],
         (
@@ -202,6 +204,7 @@ function createStreamableCollectionStore(): Readable<Map<string, VideoBox>> {
                 $isInActiveConversationStore,
                 $isListenerStore,
                 $listenerSharingCameraStore,
+                $isSpeakerStore,
                 $availabilityStatusStore,
             ] /*, set*/,
         ) => {
@@ -227,6 +230,7 @@ function createStreamableCollectionStore(): Readable<Map<string, VideoBox>> {
                     isInActiveConversation: $isInActiveConversationStore,
                     isListener: $isListenerStore,
                     listenerSharingCamera: $listenerSharingCameraStore,
+                    isSpeaker: $isSpeakerStore,
                     availabilityStatus: $availabilityStatusStore,
                 })
             ) {

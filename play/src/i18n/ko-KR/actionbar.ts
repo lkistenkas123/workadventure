@@ -12,16 +12,14 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
     participantSendMessage: "메시지 보내기",
     participantInviteUser: "사용자 초대",
     participantExitFullscreen: "전체 화면 종료",
+    participantShowList: "참가자 목록 표시",
+    participantHideList: "참가자 목록 숨기기",
     profil: "이름 편집",
-    startScreenSharing: "화면 공유 시작",
-    stopScreenSharing: "화면 공유 중지",
-    screenSharingMode: "화면 공유 모드",
     calendar: "캘린더",
     todoList: "할 일 목록",
     woka: "아바타 꾸미기",
     companion: "동반자 추가",
     //megaphone: "Use megaphone",
-    test: "내 설정 테스트",
     editCamMic: "카메라 / 마이크 설정",
     allSettings: "모든 설정",
     installPwa: "웹 앱 설치",
@@ -33,32 +31,28 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
     camera: {
         disabled: "카메라가 비활성화되어 있습니다",
         activate: "카메라 활성화",
-        noDevices: "사용 가능한 카메라 장치를 찾을 수 없습니다",
-        setBackground: "배경 설정",
-        blurEffects: "블러 효과",
-        disableBackgroundEffects: "배경 효과 끄기",
-        close: "닫기",
     },
     microphone: {
         disabled: "마이크가 비활성화되어 있습니다",
         activate: "마이크 활성화",
-        noDevices: "사용 가능한 마이크 장치를 찾을 수 없습니다",
         noSoundWarning:
             "마이크에서 소리가 감지되지 않습니다. 문제가 있을 수 있습니다 — 설정에서 마이크를 변경해 보세요.",
-        noSoundWarningPressEnter: "마이크에서 소리가 감지되지 않습니다. Enter를 눌러 설정을 엽니다.",
         advancedNoiseReduction: "고급 소음 감소",
+        loudEnvironmentWarning: "마이크에서 지속적인 배경 소음이 감지되었습니다.",
+        enableNoiseSuppression: "소음 억제 활성화",
         noiseSuppressionInitializing: "사용자 지정 소음 억제를 초기화하는 중...",
         noiseSuppressionUnsupported: "이 브라우저에서는 사용자 지정 소음 억제를 실행할 수 없습니다.",
         noiseSuppressionError: "사용자 지정 소음 억제에 실패했습니다. 브라우저 기본 소음 억제로 돌아갑니다.",
+        noiseSuppressionActive: "활성화됨",
         openSettings: "설정 열기",
         ignore: "무시",
     },
     speaker: {
         disabled: "스피커가 비활성화되어 있습니다",
-        activate: "스피커 활성화",
+        test: "오디오 출력 테스트",
         noDevices: "사용 가능한 스피커 장치를 찾을 수 없습니다",
         noDevicesDesc:
-            "브라우저에 선택 가능한 오디오 출력이 표시되지 않습니다. 일부 브라우저는 이를 제한합니다(예: Safari). 다른 브라우저를 시도하거나 헤드폰이나 스피커를 다시 연결하거나, 시스템 음향 설정과 컴퓨터 설정(개인 정보 보호, 장치)을 확인하세요.",
+            "브라우저에 선택 가능한 오디오 출력이 표시되지 않습니다. 일부 브라우저는 이를 제한합니다. 다른 브라우저를 시도하거나 헤드폰이나 스피커를 다시 연결하거나, 시스템 음향 설정과 컴퓨터 설정(개인 정보 보호, 장치)을 확인하세요.",
     },
     status: {
         ONLINE: "온라인",
@@ -90,7 +84,6 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         blurMiddle: "중간 블러",
         blurHigh: "강한 블러",
         images: "이미지",
-        videos: "비디오",
     },
     help: {
         chat: {
@@ -104,6 +97,10 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         emoji: {
             title: "이모티콘 표시",
             desc: "이모티콘 반응을 사용해 한 번의 클릭으로 감정을 표현해 보세요. 탭 한 번이면 충분합니다!",
+        },
+        raiseHand: {
+            title: "손 들기",
+            desc: "발언하고 싶다는 것을 알립니다. 든 손은 지도와 내 영상에 표시되어 누구 차례인지 모두가 알 수 있습니다.",
         },
         audioManager: {
             title: "주변 소리 볼륨",
@@ -131,6 +128,10 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
             bubbleLabel: "토론 말풍선",
             unnamedArea: "이름 없는 영역",
         },
+        giveBackFloor: {
+            title: "발언권 반납",
+            desc: "발언권을 받았습니다. 클릭하면 발언을 멈추고 반납합니다.",
+        },
         megaphone: {
             title: "확성기 중지",
             desc: "모든 사용자에게 메시지 전송을 중지합니다.",
@@ -153,7 +154,7 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         },
         share: {
             title: "화면 공유",
-            desc: "다른 사용자와 화면을 공유하고 싶으신가요? 가능합니다! 채팅에 있는 모두에게 화면을 보여줄 수 있고, 전체 화면 또는 특정 창만 선택해 공유할 수도 있습니다.",
+            desc: "다른 사용자와 화면을 공유하고 싶으신가요? 가능합니다! 버블이나 회의실에 있는 사람들에게 화면을 보여줄 수 있고, 전체 화면 또는 특정 창만 선택해 공유할 수도 있습니다.",
         },
         apps: {
             title: "외부 애플리케이션",
@@ -163,21 +164,19 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
             title: "방 목록",
             desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
         },
-        calendar: {
-            title: "캘린더",
-            desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-        },
-        todolist: {
-            title: "할 일 목록",
-            desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-        },
         pictureInPicture: {
             title: "화면 속 화면",
-            descDisabled:
-                "죄송합니다. 이 기능은 사용 중인 기기에서 사용할 수 없습니다 ❌. Chrome 또는 Edge와 같은 다른 기기나 브라우저를 사용해 이 기능에 액세스해 보세요.",
-            desc: "대화 중에 비디오나 프레젠테이션을 보면서 화면 속 화면 기능을 사용할 수 있습니다. 화면 속 화면 아이콘을 클릭하기만 하면 콘텐츠를 즐길 수 있습니다.",
+            desc: "대화 중인 비디오를 작은 플로팅 창에 표시하여, 다른 탭이나 앱에서 작업하는 동안에도 대화 상대를 계속 볼 수 있습니다.",
         },
         videoNotSupported: "브라우저에서 비디오 태그를 지원하지 않습니다.",
+    },
+    raisedHands: {
+        speaking: "발언 중",
+        title: "손 든 사람",
+        empty: "손을 든 사람이 없습니다",
+        help: "누가 순서대로 손을 들었는지 확인하고 발언권을 주세요.",
+        lowerHand: "손 내리기",
+        lowerAllHands: "모두 내리기",
     },
     listStatusTitle: {
         enable: "상태 변경",

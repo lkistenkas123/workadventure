@@ -86,6 +86,9 @@ const mapEditor: BaseTranslation = {
             defaultButtonLabel: "Play music",
             error: "Could not load sound",
             actionButtonLabel: "Play music",
+            playForAllUsersLabel: "Play for all users on the map",
+            audibleRadiusLabel: "Audible radius (in pixels)",
+            audibleRadiusPlaceholder: "Heard everywhere if empty",
         },
         openWebsite: {
             label: "Open Link",
@@ -303,6 +306,7 @@ const mapEditor: BaseTranslation = {
                 startWithAudioMuted: "Start with microphone muted",
                 startWithVideoMuted: "Start with video closed",
                 disableChat: "Disable chat",
+                raiseHandEnabled: "Allow raising hands",
                 livekitRoomAdminTag: "Moderator tag for the meeting room",
                 cancel: "Cancel",
                 validate: "Validate",
@@ -324,6 +328,7 @@ const mapEditor: BaseTranslation = {
         advancedOptions: "Advanced Options",
         chatEnabled: "Associate a dedicated chat channel",
         allowTalking: "Allow talking and forming bubbles",
+        raiseHandEnabled: "Allow raising hands",
         noProperties: "No properties defined",
     },
     areaEditor: {
@@ -453,7 +458,7 @@ const mapEditor: BaseTranslation = {
                 audienceVideoFeedbackActivated: "Auditorium mode",
                 audienceVideoFeedbackActivatedDisabled: "Auditorium mode",
                 audienceVideoFeedbackActivatedHelper:
-                    "Auditorium mode activated: Receive the camera and microphone stream of all users (with camera and microphone activated) in the room/world. But the attendee will not be able to see the other attendees. Disabled by default.",
+                    "Auditorium mode activated: Receive the camera stream of all users (with camera activated) in the room/world, without their audio. But the attendee will not be able to see the other attendees. Disabled by default.",
                 error: {
                     title: "Please enter a title",
                     save: {

@@ -1,0 +1,92 @@
+services:
+  # The existing local Traefik already owns localhost:80/443. These production-only
+  # services stay disabled in the local stack.
+  reverse-proxy:
+    profiles: [production]
+
+  coturn:
+    profiles: [production]
+
+  play:
+    networks: [default, proxy]
+    extra_hosts:
+      - "auth.teo.docker:host-gateway"
+    environment:
+      NODE_EXTRA_CA_CERTS: /local-ca-data/certs/root_ca.crt
+    volumes:
+      - local-ca-data:/local-ca-data:ro
+    labels:
+      traefik.docker.network: proxy
+      traefik.http.middlewares.teo-dev-https-redirect.redirectregex.regex: "^http://teo\\.docker/(.*)"
+      traefik.http.middlewares.teo-dev-https-redirect.redirectregex.replacement: "https://teo.docker/$${1}"
+      traefik.http.middlewares.teo-dev-https-redirect.redirectregex.permanent: "true"
+      traefik.http.routers.play.entryPoints: http
+      traefik.http.routers.play.middlewares: teo-dev-https-redirect
+      traefik.http.routers.play-ssl.entryPoints: https
+      traefik.http.routers.play-ssl.tls.certresolver: ${TEO_CERT_RESOLVER}
+      traefik.http.routers.play-ws.entryPoints: http
+      traefik.http.routers.play-ws-ssl.entryPoints: https
+      traefik.http.routers.play-ws-ssl.tls.certresolver: ${TEO_CERT_RESOLVER}
+      traefik.http.routers.room-api.entryPoints: https
+      traefik.http.routers.room-api.tls.certresolver: ${TEO_CERT_RESOLVER}
+
+  back:
+    networks: [default, proxy]
+    labels:
+      traefik.docker.network: proxy
+      traefik.http.routers.back.entryPoints: http
+      traefik.http.routers.back-ssl.entryPoints: https
+      traefik.http.routers.back-ssl.tls.certresolver: ${TEO_CERT_RESOLVER}
+
+  uploader:
+    networks: [default, proxy]
+    labels:
+      traefik.docker.network: proxy
+      traefik.http.routers.uploader.entryPoints: http
+      traefik.http.routers.uploader-ssl.entryPoints: https
+      traefik.http.routers.uploader-ssl.tls.certresolver: ${TEO_CERT_RESOLVER}
+
+  icon:
+    networks: [default, proxy]
+    labels:
+      traefik.docker.network: proxy
+      traefik.http.routers.icon.entryPoints: http
+      traefik.http.routers.icon-ssl.entryPoints: https
+      traefik.http.routers.icon-ssl.tls.certresolver: ${TEO_CERT_RESOLVER}
+      traefik.http.routers.lettericons.entryPoints: http
+      traefik.http.routers.lettericons-ssl.entryPoints: https
+      traefik.http.routers.lettericons-ssl.tls.certresolver: ${TEO_CERT_RESOLVER}
+
+  map-storage:
+    networks: [default, proxy]
+    labels:
+      traefik.docker.network: proxy
+      traefik.http.routers.map-storage.entryPoints: http
+      traefik.http.routers.map-storage-ssl.entryPoints: https
+      traefik.http.routers.map-storage-ssl.tls.certresolver: ${TEO_CERT_RESOLVER}
+
+  teo-auth:
+    build:
+      context: ../../auth
+    container_name: teo-dev-auth
+    env_file: !override
+      - ../../auth/.env.dev
+    networks: [default, proxy]
+    labels: !override
+      traefik.enable: "true"
+      traefik.docker.network: proxy
+      traefik.http.routers.teo-auth.rule: "Host(`auth.teo.docker`)"
+      traefik.http.routers.teo-auth.entrypoints: https
+      traefik.http.routers.teo-auth.tls: "true"
+      traefik.http.routers.teo-auth.tls.certresolver: ${TEO_CERT_RESOLVER}
+      traefik.http.services.teo-auth.loadbalancer.server.port: "3000"
+
+networks:
+  proxy:
+    external: true
+    name: ${TEO_PROXY_NETWORK}
+
+volumes:
+  local-ca-data:
+    external: true
+    name: ${TEO_CA_VOLUME}

@@ -12,15 +12,13 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
     participantSendMessage: "Enviar un missatge",
     participantInviteUser: "Convidar un usuari",
     participantExitFullscreen: "Sortir de la pantalla completa",
+    participantShowList: "Mostra la llista de participants",
+    participantHideList: "Amaga la llista de participants",
     profil: "Editar el teu nom",
-    startScreenSharing: "Iniciar compartir pantalla",
-    stopScreenSharing: "Aturar compartir pantalla",
-    screenSharingMode: "Mode compartir pantalla",
     calendar: "Calendari",
     todoList: "Llista de tasques",
     woka: "Personalitzar el teu avatar",
     companion: "Afegir company",
-    test: "Provar la meva configuració",
     editCamMic: "Editar càmera / micròfon",
     allSettings: "Totes les configuracions",
     installPwa: "Instal·lar l'aplicació web",
@@ -32,33 +30,29 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
     camera: {
         disabled: "La teva càmera està desactivada",
         activate: "Activar la teva càmera",
-        noDevices: "No s'ha trobat cap dispositiu de càmera",
-        setBackground: "Establir fons",
-        blurEffects: "Efectes de desenfocament",
-        disableBackgroundEffects: "Desactivar efectes de fons",
-        close: "Tancar",
     },
     microphone: {
         disabled: "El teu micròfon està desactivat",
         activate: "Activar el teu micròfon",
-        noDevices: "No s'ha trobat cap dispositiu de micròfon",
         noSoundWarning:
             "No s'ha detectat cap so del micròfon. Pot haver-hi un problema; prova de canviar el micròfon a la configuració.",
-        noSoundWarningPressEnter: "No s'ha detectat cap so del micròfon. Prem Enter per obrir la configuració.",
         advancedNoiseReduction: "Reducció avançada del soroll",
+        loudEnvironmentWarning: "S'ha detectat soroll de fons continu al micròfon.",
+        enableNoiseSuppression: "Activa la supressió de soroll",
         noiseSuppressionInitializing: "S'està inicialitzant la supressió de soroll personalitzada...",
         noiseSuppressionUnsupported: "Aquest navegador no pot executar la supressió de soroll personalitzada.",
         noiseSuppressionError:
             "La supressió de soroll personalitzada ha fallat. Es torna a la supressió de soroll nativa del navegador.",
+        noiseSuppressionActive: "Activa",
         openSettings: "Obrir configuració",
         ignore: "Ignora",
     },
     speaker: {
         disabled: "El teu altaveu està desactivat",
-        activate: "Activar el teu altaveu",
+        test: "Prova la sortida d'àudio",
         noDevices: "No s'ha trobat cap dispositiu d'altaveu",
         noDevicesDesc:
-            "El navegador no mostra cap sortida d'àudio seleccionable. Alguns navegadors ho limiten (per exemple Safari). Prova un altre navegador, torna a connectar auriculars o altaveus, revisa la configuració de so del sistema i la configuració de l'ordinador.",
+            "El navegador no mostra cap sortida d'àudio seleccionable. Alguns navegadors ho limiten. Prova un altre navegador, torna a connectar auriculars o altaveus, revisa la configuració de so del sistema i la configuració de l'ordinador.",
     },
     status: {
         ONLINE: "En línia",
@@ -90,7 +84,6 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         blurMiddle: "Desenfocament mitjà",
         blurHigh: "Desenfocament alt",
         images: "Imatges",
-        videos: "Vídeos",
     },
     help: {
         chat: {
@@ -104,6 +97,10 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         emoji: {
             title: "Mostrar un emoji",
             desc: "Expressa com et sents amb un sol clic utilitzant reaccions emoji. Només toca i ja està!",
+        },
+        raiseHand: {
+            title: "Aixeca la mà",
+            desc: "Indica que vols parlar. La teva mà aixecada es mostra al mapa i al teu vídeo, perquè tothom sàpiga a qui li toca.",
         },
         audioManager: {
             title: "Volum dels sons ambientals",
@@ -131,6 +128,10 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
             bubbleLabel: "Bombolla de discussió",
             unnamedArea: "Zona sense nom",
         },
+        giveBackFloor: {
+            title: "Retornar la paraula",
+            desc: "Se t’ha donat la paraula. Fes clic per deixar de parlar i retornar-la.",
+        },
         megaphone: {
             title: "Aturar megàfon",
             desc: "Deixa de transmetre el teu missatge a tots els usuaris.",
@@ -153,7 +154,7 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         },
         share: {
             title: "Compartir la teva pantalla",
-            desc: "Vols compartir la teva pantalla amb altres usuaris? Pots! Pots mostrar la teva pantalla a tothom al xat, i pots triar compartir tota la teva pantalla o només una finestra específica.",
+            desc: "Vols compartir la teva pantalla amb altres usuaris? Pots! Pots mostrar la teva pantalla a les persones de la teva bombolla o sala de reunions, i pots triar compartir tota la teva pantalla o només una finestra específica.",
         },
         apps: {
             title: "Aplicacions de tercers",
@@ -163,21 +164,19 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
             title: "Llista de sales",
             desc: "Explora la llista de sales per veure qui està present i unir-te a una conversa amb un clic.",
         },
-        calendar: {
-            title: "Calendari",
-            desc: "Consulta les teves reunions properes i uneix-te a elles directament des de WorkAdventure.",
-        },
-        todolist: {
-            title: "Llista de tasques",
-            desc: "Gestiona les teves tasques del dia sense sortir del teu espai de treball.",
-        },
         pictureInPicture: {
             title: "Imatge en imatge",
-            descDisabled:
-                "Malauradament, aquesta funció no està disponible al teu dispositiu ❌. Si us plau, intenta utilitzar un altre dispositiu o navegador, com Chrome o Edge, per accedir a aquesta funció.",
-            desc: "Pots utilitzar la funció d'imatge en imatge per veure un vídeo o una presentació mentre estàs en una conversa. Simplement fes clic a la icona d'imatge en imatge i gaudeix del teu contingut.",
+            desc: "Mostra els vídeos de la teva conversa en una petita finestra flotant, perquè continuïs veient les persones amb qui parles mentre treballes en una altra pestanya o aplicació.",
         },
         videoNotSupported: "El teu navegador no admet l'etiqueta de vídeo.",
+    },
+    raisedHands: {
+        speaking: "Amb la paraula",
+        title: "Mans aixecades",
+        empty: "Ningú no ha aixecat la mà",
+        help: "Mira qui ha aixecat la mà, per ordre, i dóna-li la paraula.",
+        lowerHand: "Abaixa la mà",
+        lowerAllHands: "Abaixa-les totes",
     },
     listStatusTitle: {
         enable: "Canviar el teu estat",

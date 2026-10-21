@@ -98,7 +98,7 @@
                 class="w-full md:w-1/2 block selectCompanionSceneFormSubmit pointer-events-auto"
                 onclick={(event) => {
                     event.preventDefault();
-                    analyticsClient.selectCompanion();
+                    analyticsClient.trackAdminEvent("onboarding.companion_selected");
                     selectCompanion();
                 }}
             >
@@ -140,7 +140,7 @@
 <!--        <button-->
 <!--            type="submit"-->
 <!--            class="light ml-2 selectCompanionSceneFormSubmit"-->
-<!--            onclick|preventDefault={() => analyticsClient.selectWoka()}-->
+<!--            onclick|preventDefault={() => analyticsClient.trackAdminEvent("onboarding.woka_selected")}-->
 <!--            onclick|preventDefault={selectCompanion}>{$LL.companion.select.continue()}</button-->
 <!--        >-->
 <!--    </section>-->

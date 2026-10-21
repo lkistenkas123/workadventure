@@ -6,14 +6,19 @@ import { localUserStore } from "../Connection/LocalUserStore";
 import type { VideoQualitySetting } from "../Connection/LocalUserStore";
 import { screenShareMaxResolution } from "../WebRtc/VideoPresets";
 import LL from "../../i18n/i18n-svelte";
+import { LOCAL_SCREEN_SHARING_STREAM_ID } from "../Space/Streamable";
+import { analyticsClient } from "../Administration/AnalyticsClient";
+import type { EndTimedAnalyticsEvent } from "../Administration/TimedAnalyticsEvent";
 import type { Streamable, WebRtcStreamable } from "../Space/Streamable";
 import { VideoBox } from "../Space/VideoBox";
+import { localEncoderStatsStore } from "../WebRtc/LocalEncoderStats";
 import { isSpeakerStore, type LocalStreamStoreValue } from "./MediaStore";
+import { isScreenSharingPickerCancelled } from "./ScreenSharingErrors";
 import { inExternalServiceStore, myCameraStore, myMicrophoneStore } from "./MyMediaStore";
 import type {} from "../Api/Desktop";
 import { screenShareStreamElementsStore } from "./PeerStore";
 import { muteMediaStreamStore } from "./MuteMediaStreamStore";
-import { isLiveStreamingStore } from "./IsStreamingStore";
+import { isScreenSharingAvailableStore } from "./IsStreamingStore";
 
 declare const navigator: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -34,6 +39,7 @@ export const requestedScreenSharingState = createRequestedScreenSharingState();
 
 let currentStream: MediaStream | undefined = undefined;
 let screenSharingRequestId = 0;
+let previousScreenSharingHadStream = false;
 
 /**
  * Stops the screen sharing (both video and audio tracks)
@@ -71,7 +77,7 @@ export const screenShareQualityStore = createScreenShareQualityStore();
 /**
  * A store containing whether the screen sharing button should be displayed or hidden.
  */
-export const screenSharingAvailableStore = isLiveStreamingStore;
+export const screenSharingAvailableStore = isScreenSharingAvailableStore;
 
 /**
  * A store containing the media constraints we want to apply.
@@ -283,6 +289,14 @@ export const screenSharingLocalStreamStore = derived<Readable<MediaStreamConstra
                 currentStream = undefined;
                 requestedScreenSharingState.disableScreenSharing();
                 const error = asError(e);
+                if (isScreenSharingPickerCancelled(error)) {
+                    // Not an error: nothing is shared, and no "Cannot start screen sharing" message.
+                    set({
+                        type: "success",
+                        stream: undefined,
+                    });
+                    return;
+                }
                 console.info(`Error. Unable to share screen. ${error.message}`, e);
                 set({
                     type: "error",
@@ -315,7 +329,7 @@ const screenSharingLocalMedia = readable<Streamable | undefined>(undefined, func
     );
 
     const localMedia = {
-        uniqueId: "localScreenSharingStream",
+        uniqueId: LOCAL_SCREEN_SHARING_STREAM_ID,
         media: {
             type: "webrtc" as const,
             streamStore: mutedLocalMediaStreamStore,
@@ -334,13 +348,13 @@ const screenSharingLocalMedia = readable<Streamable | undefined>(undefined, func
         flipX: false,
         muteAudio: writable(true),
         displayMode: "fit" as const,
-        displayInPictureInPictureMode: true,
         usePresentationMode: true,
         closeStreamable: () => {},
         canCloseStreamable: () => false,
         volume: writable(1),
         videoType: "screenSharing",
         webrtcStats: undefined,
+        senderStats: localEncoderStatsStore.screenSharing,
     } satisfies Streamable;
 
     const unsubscribe = screenSharingLocalStreamStore.subscribe((screenSharingLocalStream) => {
@@ -384,3 +398,37 @@ export const screenSharingLocalVideoBox: Readable<VideoBox | undefined> = derive
 export const showDesktopCapturerSourcePicker = writable(false);
 
 export let desktopCapturerSourcePromiseResolve: ((source: DesktopCapturerSource | null) => void) | undefined;
+
+/** Ends the interval measuring the share currently on air, if any. */
+let endShare: EndTimedAnalyticsEvent | undefined;
+
+// This is a singleton so we can safely not ever unsubscribe from it.
+// eslint-disable-next-line svelte/no-ignored-unsubscribe
+screenSharingLocalStreamStore.subscribe((screenSharingLocalStream) => {
+    const stream = screenSharingLocalStream.type === "success" ? screenSharingLocalStream.stream : undefined;
+    const hasStream = !!stream;
+
+    if (hasStream && !previousScreenSharingHadStream) {
+        // A live handle here means the matching stop never arrived, so this interval's
+        // end is the arrival of the next one rather than a real stop. The client does
+        // not state why an interval closed, so that is not distinguishable downstream.
+        endShare?.();
+        endShare = analyticsClient.openTimedEvent(
+            "meeting.screenshare.ended",
+            { hasAudio: (stream?.getAudioTracks().length ?? 0) > 0 },
+            // Still sharing after a reconnect: nothing fires a second start, so without
+            // this the rest of the share is never measured.
+            { reopenOnReconnect: true },
+        );
+    }
+
+    if (!hasStream && previousScreenSharingHadStream) {
+        // No duration, and no clock read: the pusher measures the interval. This used
+        // to report max(1, round(now - startedAt)) — a floor that turned a share
+        // cancelled in 200ms into a reported second.
+        endShare?.();
+        endShare = undefined;
+    }
+
+    previousScreenSharingHadStream = hasStream;
+});

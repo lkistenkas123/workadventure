@@ -12,15 +12,13 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
     participantSendMessage: "メッセージを送信",
     participantInviteUser: "ユーザーを招待",
     participantExitFullscreen: "全画面表示を終了",
+    participantShowList: "参加者リストを表示",
+    participantHideList: "参加者リストを非表示",
     profil: "名前を編集",
-    startScreenSharing: "画面共有を開始",
-    stopScreenSharing: "画面共有を停止",
-    screenSharingMode: "画面共有モード",
     calendar: "カレンダー",
     todoList: "タスクリスト",
     woka: "アバターをカスタマイズ",
     companion: "コンパニオンを追加",
-    test: "設定をテスト",
     editCamMic: "カメラ / マイクを編集",
     allSettings: "すべての設定",
     installPwa: "ウェブアプリをインストール",
@@ -32,32 +30,28 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
     camera: {
         disabled: "カメラが無効になっています",
         activate: "カメラを有効にする",
-        noDevices: "カメラデバイスが見つかりません",
-        setBackground: "背景を設定",
-        blurEffects: "ぼかし効果",
-        disableBackgroundEffects: "背景効果を無効にする",
-        close: "閉じる",
     },
     microphone: {
         disabled: "マイクが無効になっています",
         activate: "マイクを有効にする",
-        noDevices: "マイクデバイスが見つかりません",
         noSoundWarning:
             "マイクから音が検出されません。問題がある可能性があります — 設定でマイクを変更してみてください。",
-        noSoundWarningPressEnter: "マイクから音が検出されません。Enterキーを押して設定を開いてください。",
         advancedNoiseReduction: "高度なノイズ低減",
+        loudEnvironmentWarning: "マイクで継続的な背景ノイズが検出されました。",
+        enableNoiseSuppression: "ノイズ抑制を有効にする",
         noiseSuppressionInitializing: "カスタムノイズ抑制を初期化しています...",
         noiseSuppressionUnsupported: "このブラウザではカスタムノイズ抑制を実行できません。",
         noiseSuppressionError: "カスタムノイズ抑制に失敗しました。ブラウザ標準のノイズ抑制に戻します。",
+        noiseSuppressionActive: "有効",
         openSettings: "設定を開く",
         ignore: "無視",
     },
     speaker: {
         disabled: "スピーカーが無効になっています",
-        activate: "スピーカーを有効にする",
+        test: "音声出力をテスト",
         noDevices: "スピーカーデバイスが見つかりません",
         noDevicesDesc:
-            "ブラウザに選択可能な音声出力が表示されません。ブラウザによっては制限があります（例：Safari）。別のブラウザを試すか、ヘッドフォンやスピーカーを再接続するか、システムのサウンド設定とパソコンの設定（プライバシー、デバイス）を確認してください。",
+            "ブラウザに選択可能な音声出力が表示されません。ブラウザによっては制限があります。別のブラウザを試すか、ヘッドフォンやスピーカーを再接続するか、システムのサウンド設定とパソコンの設定（プライバシー、デバイス）を確認してください。",
     },
     status: {
         ONLINE: "オンライン",
@@ -89,7 +83,6 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         blurMiddle: "中程度のぼかし",
         blurHigh: "強いぼかし",
         images: "画像",
-        videos: "動画",
     },
     help: {
         chat: {
@@ -103,6 +96,10 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         emoji: {
             title: "絵文字を表示",
             desc: "絵文字のリアクションを使用して、ワンクリックで気持ちを表現できます。タップするだけです！",
+        },
+        raiseHand: {
+            title: "手を挙げる",
+            desc: "発言したいことを知らせます。挙げた手はマップとあなたのビデオに表示され、次が誰の番かみんなにわかります。",
         },
         audioManager: {
             title: "環境音の音量",
@@ -130,6 +127,10 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
             bubbleLabel: "ディスカッション bubble",
             unnamedArea: "名前のないエリア",
         },
+        giveBackFloor: {
+            title: "発言権を返す",
+            desc: "発言権が与えられています。クリックすると発言をやめて返します。",
+        },
         megaphone: {
             title: "メガホンを停止",
             desc: "すべてのユーザーへのメッセージの放送を停止します。",
@@ -152,7 +153,7 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         },
         share: {
             title: "画面を共有",
-            desc: "他のユーザーと画面を共有したいですか？できます！チャット内の全員に画面を表示でき、画面全体または特定のウィンドウのみを共有することを選択できます。",
+            desc: "他のユーザーと画面を共有したいですか？できます！バブルや会議室にいる相手に画面を表示でき、画面全体または特定のウィンドウのみを共有することを選択できます。",
         },
         apps: {
             title: "サードパーティアプリケーション",
@@ -162,21 +163,19 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
             title: "ルームリスト",
             desc: "ルームのリストを閲覧して、誰がいるか確認し、ワンクリックで会話に参加できます。",
         },
-        calendar: {
-            title: "カレンダー",
-            desc: "今後の会議を確認し、WorkAdventureから直接参加できます。",
-        },
-        todolist: {
-            title: "タスクリスト",
-            desc: "ワークスペースを離れることなく、その日のタスクを管理できます。",
-        },
         pictureInPicture: {
             title: "ピクチャーインピクチャー",
-            descDisabled:
-                "申し訳ございませんが、この機能はお使いのデバイスでは利用できません ❌。この機能にアクセスするには、Chrome や Edge などの別のデバイスやブラウザをお試しください。",
-            desc: "会話中にビデオやプレゼンテーションを視聴する際に、ピクチャーインピクチャー機能を使用できます。ピクチャーインピクチャーアイコンをクリックするだけで、コンテンツをお楽しみいただけます。",
+            desc: "会話のビデオを小さなフローティングウィンドウに表示します。別のタブやアプリで作業しながら、話している相手を見続けられます。",
         },
         videoNotSupported: "お使いのブラウザは動画タグに対応していません。",
+    },
+    raisedHands: {
+        speaking: "発言中",
+        title: "挙手",
+        empty: "挙手している人はいません",
+        help: "誰が挙手したかを順番に確認し、発言権を与えましょう。",
+        lowerHand: "手を下げる",
+        lowerAllHands: "すべて下げる",
     },
     listStatusTitle: {
         enable: "ステータスを変更",

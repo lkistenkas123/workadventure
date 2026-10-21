@@ -12,15 +12,13 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
     participantSendMessage: "Bericht verzenden",
     participantInviteUser: "Gebruiker uitnodigen",
     participantExitFullscreen: "Volledig scherm verlaten",
+    participantShowList: "Deelnemerslijst tonen",
+    participantHideList: "Deelnemerslijst verbergen",
     profil: "Bewerk je naam",
-    startScreenSharing: "Schermdeling starten",
-    stopScreenSharing: "Schermdeling stoppen",
-    screenSharingMode: "Schermdeling modus",
     calendar: "Kalender",
     todoList: "Takenlijst",
     woka: "Pas je avatar aan",
     companion: "Metgezel toevoegen",
-    test: "Test mijn instellingen",
     editCamMic: "Bewerk camera / microfoon",
     allSettings: "Alle instellingen",
     installPwa: "Web-app installeren",
@@ -32,34 +30,29 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
     camera: {
         disabled: "Je camera is uitgeschakeld",
         activate: "Activeer je camera",
-        noDevices: "Geen camera-apparaat gevonden",
-        setBackground: "Achtergrond instellen",
-        blurEffects: "Vervagingseffecten",
-        disableBackgroundEffects: "Achtergrondeffecten uitschakelen",
-        close: "Sluiten",
     },
     microphone: {
         disabled: "Je microfoon is uitgeschakeld",
         activate: "Activeer je microfoon",
-        noDevices: "Geen microfoonapparaat gevonden",
         noSoundWarning:
             "Geen geluid gedetecteerd van je microfoon. Er kan een probleem zijn; probeer je microfoon te wijzigen in de instellingen.",
-        noSoundWarningPressEnter:
-            "Geen geluid gedetecteerd van je microfoon. Druk op Enter om de instellingen te openen.",
         advancedNoiseReduction: "Geavanceerde ruisreductie",
+        loudEnvironmentWarning: "Er is aanhoudend achtergrondgeluid op je microfoon gedetecteerd.",
+        enableNoiseSuppression: "Ruisonderdrukking inschakelen",
         noiseSuppressionInitializing: "Aangepaste ruisonderdrukking initialiseren...",
         noiseSuppressionUnsupported: "Deze browser kan aangepaste ruisonderdrukking niet uitvoeren.",
         noiseSuppressionError:
             "Aangepaste ruisonderdrukking is mislukt. Er wordt teruggevallen op de ingebouwde ruisonderdrukking van de browser.",
+        noiseSuppressionActive: "Actief",
         openSettings: "Instellingen openen",
         ignore: "Negeren",
     },
     speaker: {
         disabled: "Je luidspreker is uitgeschakeld",
-        activate: "Activeer je luidspreker",
+        test: "Audio-uitvoer testen",
         noDevices: "Geen luidsprekerapparaat gevonden",
         noDevicesDesc:
-            "Je browser toont geen selecteerbare audio-uitvoer. Sommige browsers beperken dit (bijv. Safari). Probeer een andere browser, sluit koptelefoon of speakers opnieuw aan, controleer de systeemgeluidsinstellingen en de configuratie van de computer (privacy, apparaten).",
+            "Je browser toont geen selecteerbare audio-uitvoer. Sommige browsers beperken dit. Probeer een andere browser, sluit koptelefoon of speakers opnieuw aan, controleer de systeemgeluidsinstellingen en de configuratie van de computer (privacy, apparaten).",
     },
     status: {
         ONLINE: "Online",
@@ -91,7 +84,6 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         blurMiddle: "Middelmatige vervaging",
         blurHigh: "Grote vervaging",
         images: "Afbeeldingen",
-        videos: "Video's",
     },
     help: {
         chat: {
@@ -105,6 +97,10 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         emoji: {
             title: "Een emoji weergeven",
             desc: "Druk uit hoe je je voelt met slechts één klik met emoji-reacties. Gewoon tikken en gaan!",
+        },
+        raiseHand: {
+            title: "Hand opsteken",
+            desc: "Geef aan dat je iets wilt zeggen. Je opgestoken hand wordt op de kaart en op je video getoond, zodat iedereen weet wie er aan de beurt is.",
         },
         audioManager: {
             title: "Volume van omgevingsgeluiden",
@@ -132,6 +128,10 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
             bubbleLabel: "Discussiebubbel",
             unnamedArea: "Naamloos gebied",
         },
+        giveBackFloor: {
+            title: "Woord teruggeven",
+            desc: "Je hebt het woord gekregen. Klik om te stoppen met spreken en het terug te geven.",
+        },
         megaphone: {
             title: "Megafoon stoppen",
             desc: "Stop met het uitzenden van je bericht naar alle gebruikers.",
@@ -154,7 +154,7 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
         },
         share: {
             title: "Je scherm delen",
-            desc: "Wil je je scherm delen met andere gebruikers? Dat kan! Je kunt je scherm aan iedereen in de chat tonen, en je kunt kiezen om je hele scherm of alleen een specifiek venster te delen.",
+            desc: "Wil je je scherm delen met andere gebruikers? Dat kan! Je kunt je scherm tonen aan de mensen in je bubbel of vergaderruimte, en je kunt kiezen om je hele scherm of alleen een specifiek venster te delen.",
         },
         apps: {
             title: "Applicaties van derden",
@@ -164,21 +164,19 @@ const actionbar: DeepPartial<Translation["actionbar"]> = {
             title: "Kamerlijst",
             desc: "Bekijk de lijst met kamers om te zien wie er is en doe met één klik mee aan een gesprek.",
         },
-        calendar: {
-            title: "Kalender",
-            desc: "Bekijk je aanstaande vergaderingen en doe er direct vanuit WorkAdventure aan mee.",
-        },
-        todolist: {
-            title: "Takenlijst",
-            desc: "Beheer je taken van de dag zonder je werkruimte te verlaten.",
-        },
         pictureInPicture: {
             title: "Picture in picture",
-            descDisabled:
-                "Helaas is deze functie niet beschikbaar op uw apparaat ❌. Probeer een ander apparaat of browser te gebruiken, zoals Chrome of Edge, om toegang te krijgen tot deze functie.",
-            desc: "U kunt de picture-in-picture functie gebruiken om een video of presentatie te bekijken terwijl u in een gesprek bent. Klik gewoon op het picture-in-picture pictogram en geniet van uw inhoud.",
+            desc: "Toont de video's van uw gesprek in een klein zwevend venster, zodat u uw gesprekspartners blijft zien terwijl u in een ander tabblad of een andere app werkt.",
         },
         videoNotSupported: "Uw browser ondersteunt de videotag niet.",
+    },
+    raisedHands: {
+        speaking: "Aan het woord",
+        title: "Opgestoken handen",
+        empty: "Niemand heeft de hand opgestoken",
+        help: "Bekijk wie zijn hand heeft opgestoken, op volgorde, en geef diegene het woord.",
+        lowerHand: "Hand laten zakken",
+        lowerAllHands: "Alle laten zakken",
     },
     listStatusTitle: {
         enable: "Wijzig je status",

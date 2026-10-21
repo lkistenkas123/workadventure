@@ -87,6 +87,9 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
             defaultButtonLabel: "Phát nhạc",
             error: "Không thể tải âm thanh",
             actionButtonLabel: "Phát nhạc",
+            playForAllUsersLabel: "Phát cho tất cả người dùng trên bản đồ",
+            audibleRadiusLabel: "Bán kính nghe được (pixel)",
+            audibleRadiusPlaceholder: "Nghe được ở mọi nơi nếu để trống",
         },
         openWebsite: {
             label: "Mở liên kết",
@@ -304,6 +307,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 startWithAudioMuted: "Bắt đầu với micrô tắt",
                 startWithVideoMuted: "Bắt đầu với video tắt",
                 disableChat: "Tắt trò chuyện",
+                raiseHandEnabled: "Cho phép giơ tay",
                 livekitRoomAdminTag: "Nhãn người điều hành cho phòng họp",
                 cancel: "Hủy",
                 validate: "Xác nhận",
@@ -326,6 +330,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
         advancedOptions: "Tùy chọn nâng cao",
         chatEnabled: "Gắn một kênh trò chuyện riêng",
         allowTalking: "Cho phép nói chuyện và tạo bong bóng",
+        raiseHandEnabled: "Cho phép giơ tay",
         noProperties: "Chưa có thuộc tính nào",
     },
     areaEditor: {
@@ -455,7 +460,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 audienceVideoFeedbackActivated: "Chế độ hội trường",
                 audienceVideoFeedbackActivatedDisabled: "Chế độ hội trường",
                 audienceVideoFeedbackActivatedHelper:
-                    "Chế độ hội trường bật: Nhận luồng camera và micrô của tất cả người dùng (đang bật camera và micrô) trong phòng/thế giới. Nhưng người tham dự sẽ không thấy những người tham dự khác. Mặc định tắt.",
+                    "Chế độ hội trường bật: Nhận luồng camera của tất cả người dùng (đang bật camera) trong phòng/thế giới, không kèm âm thanh. Nhưng người tham dự sẽ không thấy những người tham dự khác. Mặc định tắt.",
                 error: {
                     title: "Vui lòng nhập tiêu đề",
                     save: {

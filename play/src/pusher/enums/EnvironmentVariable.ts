@@ -48,6 +48,8 @@ export const PUSHER_ADMIN_WS_MAX_BACKPRESSURE_BYTES = env.PUSHER_ADMIN_WS_MAX_BA
 export const ALLOWED_CORS_ORIGIN = env.ALLOWED_CORS_ORIGIN; // Use "*" to allow any domain
 export const PUSHER_URL = env.PUSHER_URL || "";
 export const FRONT_URL = env.FRONT_URL || "";
+export const ASSETS_URL = env.ASSETS_URL?.replace(/\/$/, "");
+export const ASSETS_INTERNAL_URL = (env.ASSETS_INTERNAL_URL ?? env.ASSETS_URL)?.replace(/\/$/, "");
 export const PUBLIC_MAP_STORAGE_URL = env.PUBLIC_MAP_STORAGE_URL || "";
 export const INTERNAL_MAP_STORAGE_URL = env.INTERNAL_MAP_STORAGE_URL;
 export const REDIS_HOST = env.REDIS_HOST;
@@ -82,6 +84,7 @@ const isUsingDeprecatedOpenIdVariables =
 export const OPID_SCOPE = env.OPENID_SCOPE || env.OPID_SCOPE || "openid email profile ";
 export const OPID_PROMPT =
     env.OPENID_PROMPT || env.OPID_PROMPT || (isUsingDeprecatedOpenIdVariables ? "login" : undefined);
+export const OPID_ACCESS_TYPE = env.OPENID_ACCESS_TYPE || undefined;
 export const OPID_USERNAME_CLAIM = env.OPENID_USERNAME_CLAIM || env.OPID_USERNAME_CLAIM || "username";
 export const OPID_LOCALE_CLAIM = env.OPENID_LOCALE_CLAIM || env.OPID_LOCALE_CLAIM || "locale";
 export const OPID_WOKA_NAME_POLICY = env.OPENID_WOKA_NAME_POLICY || env.OPID_WOKA_NAME_POLICY || "user_input";
@@ -98,6 +101,10 @@ export const ENABLE_CHAT_DISCONNECTED_LIST: boolean = env.ENABLE_CHAT_DISCONNECT
 export const DEFAULT_WOKA_NAME: string = env.DEFAULT_WOKA_NAME || "";
 export const DEFAULT_WOKA_TEXTURE: string = env.DEFAULT_WOKA_TEXTURE || "";
 export const SKIP_CAMERA_PAGE: boolean = env.SKIP_CAMERA_PAGE ?? false;
+/** Initial value of the camera privacy setting for users who have not set their own preference. */
+export const DEFAULT_CAMERA_PRIVACY_SETTINGS: boolean = env.DEFAULT_CAMERA_PRIVACY_SETTINGS ?? false;
+/** Initial value of the microphone privacy setting for users who have not set their own preference. */
+export const DEFAULT_MICROPHONE_PRIVACY_SETTINGS: boolean = env.DEFAULT_MICROPHONE_PRIVACY_SETTINGS ?? true;
 /** When true, map details include bypassPwa so the play client never shows the Web App install screen. */
 export const BYPASS_PWA: boolean = env.BYPASS_PWA ?? false;
 export const PROVIDE_DEFAULT_WOKA_NAME: "no" | "random" | "fix" | "fix-plus-random-numbers" | undefined =
@@ -167,7 +174,7 @@ export const MATRIX_ADMIN_USER: string | undefined = env.MATRIX_ADMIN_USER;
 export const MATRIX_ADMIN_PASSWORD: string | undefined = env.MATRIX_ADMIN_PASSWORD;
 export const MATRIX_DOMAIN: string | undefined = env.MATRIX_DOMAIN;
 
-export const ENABLE_SAY: boolean = env.ENABLE_SAY || true;
+export const ENABLE_SAY: boolean = env.ENABLE_SAY;
 
 export const LIVEKIT_RECORDING_S3_ENDPOINT: string | undefined = env.LIVEKIT_RECORDING_S3_ENDPOINT;
 export const LIVEKIT_RECORDING_S3_CDN_ENDPOINT: string | undefined = env.LIVEKIT_RECORDING_S3_CDN_ENDPOINT;
@@ -176,13 +183,14 @@ export const LIVEKIT_RECORDING_S3_SECRET_KEY: string | undefined = env.LIVEKIT_R
 export const LIVEKIT_RECORDING_S3_BUCKET: string | undefined = env.LIVEKIT_RECORDING_S3_BUCKET;
 export const LIVEKIT_RECORDING_S3_REGION: string | undefined = env.LIVEKIT_RECORDING_S3_REGION;
 export const LIVEKIT_PIXEL_DENSITY: number = env.LIVEKIT_PIXEL_DENSITY;
-export const ENABLE_ISSUE_REPORT: boolean = env.ENABLE_ISSUE_REPORT || true;
+export const ENABLE_ISSUE_REPORT: boolean = env.ENABLE_ISSUE_REPORT;
 // Tutorial settings
 export const ENABLE_TUTORIAL: boolean = env.ENABLE_TUTORIAL ?? true;
-export const VIDEO_ANALYTICS_FLUSH_INTERVAL_MS: number = env.VIDEO_ANALYTICS_FLUSH_INTERVAL_MS;
-export const VIDEO_ANALYTICS_TIMEOUT_MS: number = env.VIDEO_ANALYTICS_TIMEOUT_MS;
-export const VIDEO_ANALYTICS_MAX_QUEUE_SIZE: number = env.VIDEO_ANALYTICS_MAX_QUEUE_SIZE;
-export const VIDEO_ANALYTICS_MAX_BATCH_SIZE: number = env.VIDEO_ANALYTICS_MAX_BATCH_SIZE;
+export const ANALYTICS_FLUSH_INTERVAL_MS: number = env.ANALYTICS_FLUSH_INTERVAL_MS;
+export const ANALYTICS_TIMEOUT_MS: number = env.ANALYTICS_TIMEOUT_MS;
+export const ANALYTICS_MAX_QUEUE_SIZE: number = env.ANALYTICS_MAX_QUEUE_SIZE;
+export const ANALYTICS_MAX_BATCH_SIZE: number = env.ANALYTICS_MAX_BATCH_SIZE;
+export const DRAIN_TIMEOUT_MS: number = env.DRAIN_TIMEOUT_MS;
 
 // Front container:
 export const FRONT_ENVIRONMENT_VARIABLES: FrontConfigurationInterface = {
@@ -193,16 +201,15 @@ export const FRONT_ENVIRONMENT_VARIABLES: FrontConfigurationInterface = {
     UPLOADER_URL: env.UPLOADER_URL,
     ICON_URL: env.ICON_URL,
     SKIP_RENDER_OPTIMIZATIONS: env.SKIP_RENDER_OPTIMIZATIONS,
-    DISABLE_NOTIFICATIONS: env.DISABLE_NOTIFICATIONS,
     JITSI_URL: env.JITSI_URL,
     JITSI_PRIVATE_MODE: env.JITSI_PRIVATE_MODE,
     ENABLE_MAP_EDITOR: env.ENABLE_MAP_EDITOR,
     PUBLIC_MAP_STORAGE_PREFIX: env.PUBLIC_MAP_STORAGE_URL ? new URL(env.PUBLIC_MAP_STORAGE_URL).pathname : undefined,
     MAX_USERNAME_LENGTH: env.MAX_USERNAME_LENGTH,
     MAX_PER_GROUP: env.MAX_PER_GROUP,
+    PROXIMITY_FILE_TRANSFER_MAX_USERS: env.PROXIMITY_FILE_TRANSFER_MAX_USERS,
     MAX_DISPLAYED_VIDEOS: env.MAX_DISPLAYED_VIDEOS,
     LIVEKIT_PIXEL_DENSITY: env.LIVEKIT_PIXEL_DENSITY,
-    NODE_ENV: env.NODE_ENV || "development",
     CONTACT_URL: env.CONTACT_URL,
     POSTHOG_API_KEY: env.POSTHOG_API_KEY,
     POSTHOG_URL: env.POSTHOG_URL,
@@ -221,7 +228,6 @@ export const FRONT_ENVIRONMENT_VARIABLES: FrontConfigurationInterface = {
     SENTRY_RELEASE: env.SENTRY_RELEASE,
     SENTRY_TRACES_SAMPLE_RATE: env.SENTRY_TRACES_SAMPLE_RATE,
     WOKA_SPEED: env.WOKA_SPEED,
-    FEATURE_FLAG_BROADCAST_AREAS: env.FEATURE_FLAG_BROADCAST_AREAS,
     KLAXOON_ENABLED: env.KLAXOON_ENABLED,
     KLAXOON_CLIENT_ID: env.KLAXOON_CLIENT_ID,
     YOUTUBE_ENABLED: env.YOUTUBE_ENABLED,
@@ -244,11 +250,10 @@ export const FRONT_ENVIRONMENT_VARIABLES: FrontConfigurationInterface = {
     ENABLE_CHAT_DISCONNECTED_LIST,
     MATRIX_ADMIN_USER,
     MATRIX_DOMAIN,
-    ENABLE_SAY: env.ENABLE_SAY || true,
-    ENABLE_ISSUE_REPORT: env.ENABLE_ISSUE_REPORT || true,
+    ENABLE_SAY,
+    ENABLE_ISSUE_REPORT,
     GRPC_MAX_MESSAGE_SIZE: env.GRPC_MAX_MESSAGE_SIZE,
     TURN_CREDENTIALS_RENEWAL_TIME: env.TURN_CREDENTIALS_RENEWAL_TIME,
-    BACKGROUND_TRANSFORMER_ENGINE: env.BACKGROUND_TRANSFORMER_ENGINE || "selfie-segmentation",
     // Woka settings
     DEFAULT_WOKA_NAME,
     DEFAULT_WOKA_TEXTURE,

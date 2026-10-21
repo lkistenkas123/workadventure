@@ -1,16 +1,18 @@
 <script lang="ts">
     import { type Writable, writable } from "svelte/store";
+    import { FilterType } from "@workadventure/messages";
     import MicrophoneCloseSvg from "../images/microphone-close.svg";
-    import banUserSvg from "../images/ban-user.svg";
     import NoVideoSvg from "../images/no-video.svg";
     import { LL } from "../../../i18n/i18n-svelte";
     import { requestVisitCardsStore, userIsAdminStore } from "../../Stores/GameStore";
+    import { raisedHandsOrderStore } from "../../Stores/RaisedHandsStore";
     import { analyticsClient } from "../../Administration/AnalyticsClient";
+    import { meetingOf } from "../../Administration/CurrentMeeting";
     import type { SpaceUserExtended } from "../../Space/SpaceInterface";
-    import { showReportScreenStore } from "../../Stores/ShowReportScreenStore";
+    import { openModerationModal } from "../Moderation/openModerationModal";
     import RangeSlider from "../Input/RangeSlider.svelte";
     import type { StreamCategory } from "../../Space/Streamable";
-    import { IconAlertTriangle, IconUser, IconMute, IconUnMute } from "@wa-icons";
+    import { IconAlertTriangle, IconUser, IconMute, IconUnMute, IconMicrophone, IconMicrophoneOff } from "@wa-icons";
 
     interface Props {
         spaceUser: SpaceUserExtended;
@@ -27,11 +29,22 @@
     let isMicrophoneEnabled = $derived(spaceUser.reactiveUser.microphoneState);
     let isVideoEnabled = $derived(spaceUser.reactiveUser.cameraState);
     let canAskToMuteAudioOrTurnOffVideo = $derived(spaceUser.space.canAskToMuteAudioOrTurnOffVideo);
+    // Raise-hand state comes from the space state queue (not SpaceUser), so it is known even for a
+    // listener whose SpaceUser the local user does not receive.
+    let isHandRaised = $derived(
+        $raisedHandsOrderStore.get(spaceUser.space.getName())?.has(spaceUser.spaceUserId) ?? false,
+    );
+    let hasFloor = $derived(spaceUser.reactiveUser.megaphoneState);
+    // The floor is only a real thing in a megaphone broadcast. In a bubble or a meeting room (ALL_USERS space)
+    // everybody already speaks, so we offer no give / take back control there: the raised-hand badge is enough.
+    let canModerateFloor = $derived(
+        ($userIsAdminStore || $canAskToMuteAudioOrTurnOffVideo) && spaceUser.space.filterType !== FilterType.ALL_USERS,
+    );
 
     let moreActionOpened = $state(false);
 
     function muteAudio(spaceUser: SpaceUserExtended) {
-        analyticsClient.muteMicrophoneMeetingAction();
+        analyticsClient.trackAdminEvent("meeting.microphone.muted", meetingOf(spaceUser.space));
         spaceUser.emitPrivateEvent({
             $case: "muteAudio",
             muteAudio: {
@@ -42,7 +55,7 @@
     }
 
     function muteAudioEveryBody(spaceUser: SpaceUserExtended) {
-        analyticsClient.muteMicrophoneEverybodyMeetingAction();
+        analyticsClient.trackAdminEvent("meeting.microphone.muted_for_everybody", meetingOf(spaceUser.space));
         spaceUser.space.emitPublicMessage({
             $case: "muteAudioForEverybody",
             muteAudioForEverybody: {},
@@ -51,7 +64,7 @@
     }
 
     function muteVideo(spaceUser: SpaceUserExtended) {
-        analyticsClient.muteVideoMeetingAction();
+        analyticsClient.trackAdminEvent("meeting.video.muted", meetingOf(spaceUser.space));
         spaceUser.emitPrivateEvent({
             $case: "muteVideo",
             muteVideo: {
@@ -62,7 +75,7 @@
     }
 
     function muteVideoEveryBody(spaceUser: SpaceUserExtended) {
-        analyticsClient.muteVideoEverybodyMeetingAction();
+        analyticsClient.trackAdminEvent("meeting.video.muted_for_everybody", meetingOf(spaceUser.space));
         spaceUser.space.emitPublicMessage({
             $case: "muteVideoForEverybody",
             muteVideoForEverybody: {},
@@ -77,13 +90,15 @@
         trackStreamWrapper.ban();
     }*/
 
-    function kickoff(spaceUser: SpaceUserExtended) {
-        analyticsClient.kickoffMeetingAction();
-        spaceUser.emitPrivateEvent({
-            $case: "kickOffUser",
-            kickOffUser: {},
-        });
+    function giveFloor(spaceUser: SpaceUserExtended) {
+        analyticsClient.trackAdminEvent("meeting.floor.given");
+        spaceUser.space.state.giveFloor(spaceUser.spaceUserId).catch((error) => console.error(error));
+        close();
+    }
 
+    function revokeFloor(spaceUser: SpaceUserExtended) {
+        analyticsClient.trackAdminEvent("meeting.floor.revoked");
+        spaceUser.space.state.revokeFloor(spaceUser.spaceUserId).catch((error) => console.error(error));
         close();
     }
 
@@ -92,13 +107,13 @@
     }
 
     function openBlockOrReportPopup(spaceUser: SpaceUserExtended) {
-        analyticsClient.reportMeetingAction();
-        showReportScreenStore.set({ userUuid: spaceUser.uuid, userName: spaceUser.name });
+        analyticsClient.trackAdminEvent("meeting.report.clicked", meetingOf(spaceUser.space));
+        openModerationModal(spaceUser.uuid, spaceUser.name);
         close();
     }
 
     function visitCard(spaceUser: SpaceUserExtended) {
-        analyticsClient.sendPrivateMessageMeetingAction();
+        analyticsClient.trackAdminEvent("user.business_card.opened");
         requestVisitCardsStore.set(spaceUser.visitCardUrl ?? null);
         close();
     }
@@ -114,7 +129,7 @@
     onclick={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        analyticsClient.moreActionMetting();
+        analyticsClient.trackAdminEvent("meeting.actions.opened", meetingOf(spaceUser.space));
         toggleActionMenu(!moreActionOpened);
     }}
     role="button"
@@ -185,6 +200,38 @@
         </button>
     {/if}
 
+    <!-- Give the floor (to a user who raised their hand) -->
+    {#if canModerateFloor && !isScreenSharing && isHandRaised && !$hasFloor}
+        <button
+            class="action-button give-floor-user flex gap-2 items-center hover:bg-white/10 m-0 p-2 w-full text-sm rounded leading-4 text-left text-white"
+            data-testid="give-floor-user"
+            onclick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                giveFloor(spaceUser);
+            }}
+        >
+            <IconMicrophone class="w-4 h-4 text-white flex-shrink-0" />
+            {$LL.camera.menu.giveFloor()}
+        </button>
+    {/if}
+
+    <!-- Revoke the floor (take it back from a current speaker) -->
+    {#if canModerateFloor && !isScreenSharing && $hasFloor}
+        <button
+            class="action-button revoke-floor-user flex gap-2 items-center hover:bg-white/10 m-0 p-2 w-full text-sm rounded leading-4 text-left text-white"
+            data-testid="revoke-floor-user"
+            onclick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                revokeFloor(spaceUser);
+            }}
+        >
+            <IconMicrophoneOff class="w-4 h-4 text-white flex-shrink-0" />
+            {$LL.camera.menu.revokeFloor()}
+        </button>
+    {/if}
+
     <!-- Mute audio every body -->
     {#if $userIsAdminStore}
         <button
@@ -236,29 +283,13 @@
         </button>
     {/if}
 
-    <!-- Kickoff user -->
-    {#if $userIsAdminStore}
-        <button
-            id="kickoff-user"
-            class="action-button flex gap-2 items-center hover:bg-white/10 m-0 p-2 w-full text-sm rounded leading-4 text-left text-white"
-            onclick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                kickoff(spaceUser);
-            }}
-        >
-            <img src={banUserSvg} class="w-4 h-4" alt="" draggable="false" />
-            {$LL.camera.menu.kickoffUser()}
-        </button>
-    {/if}
-
     <!-- Send private message -->
     <!--    <button-->
     <!--        class="action-button flex flex-row items-center justify-center p-0 mx-1 cursor-pointer"-->
     <!--        onclick={(event) => {-->
     <!--            event.preventDefault();-->
     <!--            event.stopPropagation();-->
-    <!--            analyticsClient.sendPrivateMessageMeetingAction();-->
+    <!--            analyticsClient.trackAdminEvent("meeting.private_message.clicked");-->
     <!--            sendPrivateMessage();-->
     <!--        }}-->
     <!--    >-->
@@ -273,7 +304,6 @@
             onclick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                analyticsClient.sendPrivateMessageMeetingAction();
                 visitCard(spaceUser);
             }}
         >

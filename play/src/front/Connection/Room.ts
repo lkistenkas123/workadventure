@@ -16,6 +16,7 @@ import {
 } from "../Enum/EnvironmentVariable";
 import { ApiError } from "../Stores/Errors/ApiError";
 import { ABSOLUTE_PUSHER_URL } from "../Enum/ComputedConst";
+import { getMapStorageRootUrl } from "../Utils/MapStorageUrl";
 import { axiosWithRetry } from "./AxiosUtils";
 import { localUserStore } from "./LocalUserStore";
 export class MapDetail {
@@ -30,6 +31,9 @@ export interface RoomRedirect {
 }
 
 export class Room {
+    public static readonly DEFAULT_CAMERA_PRIVACY_SETTINGS = false;
+    public static readonly DEFAULT_MICROPHONE_PRIVACY_SETTINGS = true;
+
     public readonly id: string;
     private _authenticationMandatory: boolean = DISABLE_ANONYMOUS;
     private _opidLogoutRedirectUrl: string = new URL("logout", ABSOLUTE_PUSHER_URL).toString();
@@ -77,6 +81,8 @@ export class Room {
     private _provideDefaultWokaTexture: "no" | "random" | "fix" = "no";
     private _skipCameraPage: boolean = false;
     private _bypassPwa: boolean = false;
+    private _defaultCameraPrivacySettings: boolean = Room.DEFAULT_CAMERA_PRIVACY_SETTINGS;
+    private _defaultMicrophonePrivacySettings: boolean = Room.DEFAULT_MICROPHONE_PRIVACY_SETTINGS;
     private _recording: RecordingData | undefined;
 
     private constructor(private roomUrl: URL) {
@@ -228,6 +234,10 @@ export class Room {
                 this._provideDefaultWokaTexture = data.provideDefaultWokaTexture ?? "no";
                 this._skipCameraPage = data.skipCameraPage ?? false;
                 this._bypassPwa = data.bypassPwa ?? false;
+                this._defaultCameraPrivacySettings =
+                    data.defaultCameraPrivacySettings ?? Room.DEFAULT_CAMERA_PRIVACY_SETTINGS;
+                this._defaultMicrophonePrivacySettings =
+                    data.defaultMicrophonePrivacySettings ?? Room.DEFAULT_MICROPHONE_PRIVACY_SETTINGS;
                 this._recording = data.recording ?? undefined;
 
                 return new MapDetail(data.mapUrl, data.wamUrl);
@@ -300,11 +310,7 @@ export class Room {
         if (!this._wamUrl) {
             return undefined;
         }
-        let mapStoragePath = PUBLIC_MAP_STORAGE_PREFIX ?? "";
-        if (!mapStoragePath.endsWith("/")) {
-            mapStoragePath += "/";
-        }
-        return new URL(mapStoragePath, this._wamUrl);
+        return getMapStorageRootUrl(this._wamUrl, PUBLIC_MAP_STORAGE_PREFIX);
     }
 
     get authenticationMandatory(): boolean {
@@ -499,6 +505,16 @@ export class Room {
     /** When true (admin / map API), never show the Web App install flow. */
     get bypassPwa(): boolean {
         return this._bypassPwa;
+    }
+
+    /** Default for the camera privacy setting ("keep camera enabled when the tab is away") until the user sets their own preference. */
+    get defaultCameraPrivacySettings(): boolean {
+        return this._defaultCameraPrivacySettings;
+    }
+
+    /** Default for the microphone privacy setting ("keep microphone enabled when the tab is away") until the user sets their own preference. */
+    get defaultMicrophonePrivacySettings(): boolean {
+        return this._defaultMicrophonePrivacySettings;
     }
 
     get recording(): RecordingData | undefined {

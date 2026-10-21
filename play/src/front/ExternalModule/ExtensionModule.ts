@@ -50,6 +50,8 @@ export interface ExtensionModuleAreaProperty {
     handleAreaPropertyOnEnter: (area: AreaData, signal: AbortSignal) => void;
     handleAreaPropertyOnLeave: (area?: AreaData) => void;
     shouldDisplayButton: (areaProperties: AreaDataProperties) => boolean;
+    /** This area property opens a meeting: an area holds only one. */
+    isMeeting?: boolean;
 }
 
 export interface ExtensionModule {
@@ -58,14 +60,6 @@ export interface ExtensionModule {
     destroy: () => void;
     areaMapEditor?: () => { [key: string]: ExtensionModuleAreaProperty } | undefined;
     components?: () => WorkAdventureComponent[];
-    openPopupMeeting?: (
-        subject: string,
-        joinWebUrl: string,
-        meetingId: string,
-        startDateTime: Date,
-        endDateTime: Date,
-        passcode?: string,
-    ) => void;
     calendarSynchronised: boolean;
     todoListSynchronized: boolean;
 }

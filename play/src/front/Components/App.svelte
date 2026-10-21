@@ -25,6 +25,7 @@
     import { ErrorScene } from "../Phaser/Reconnecting/ErrorScene";
     import { Game } from "../Phaser/Game/Game";
     import { waScaleManager } from "../Phaser/Services/WaScaleManager";
+    import { startBackgroundBootPump } from "../Phaser/Services/BackgroundBootPump";
     import { HtmlUtils } from "../WebRtc/HtmlUtils";
     import { iframeListener } from "../Api/IframeListener";
     import { desktopApi } from "../Api/Desktop";
@@ -56,7 +57,9 @@
             try {
                 const sentryOptions: Sentry.BrowserOptions = {
                     dsn: SENTRY_DSN_FRONT,
-                    release: SENTRY_RELEASE,
+                    // Prefer the release injected at build time by sentryVitePlugin: the front can be deployed
+                    // without the pusher, so the pusher's SENTRY_RELEASE may be older than this bundle.
+                    release: (globalThis as { SENTRY_RELEASE?: { id?: string } }).SENTRY_RELEASE?.id ?? SENTRY_RELEASE,
                     environment: SENTRY_ENVIRONMENT,
                     // Keep Sentry's default `browserApiErrors` integration but disable its
                     // requestAnimationFrame wrapping: it re-wraps the rAF callback on every frame,
@@ -209,6 +212,8 @@
 
         game = new Game(config);
 
+        stopBootPump = startBackgroundBootPump(game);
+
         waScaleManager.setGame(game);
 
         canvas = HtmlUtils.querySelectorOrFail<HTMLCanvasElement>("#game canvas");
@@ -251,6 +256,7 @@
     //$: $coWebsites.length < 1 ? (flexBasis = undefined) : null;
 
     let canvasSizeUnsubscriber: Unsubscriber;
+    let stopBootPump: (() => void) | undefined;
     onMount(() => {
         canvasSizeUnsubscriber = canvasSize.subscribe(({ width, height }) => {
             if (width < 1 || height < 1) {
@@ -263,6 +269,7 @@
 
     onDestroy(() => {
         canvasSizeUnsubscriber?.();
+        stopBootPump?.();
         if (canvas && handleCanvasClick) {
             canvas.removeEventListener("click", handleCanvasClick);
         }

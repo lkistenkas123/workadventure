@@ -88,6 +88,9 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
             defaultButtonLabel: "Riproduci musica",
             error: "Impossibile caricare il suono",
             actionButtonLabel: "Riproduci musica",
+            playForAllUsersLabel: "Riproduci per tutti gli utenti della mappa",
+            audibleRadiusLabel: "Raggio udibile (in pixel)",
+            audibleRadiusPlaceholder: "Udibile ovunque se vuoto",
         },
         openWebsite: {
             hideUrlLabel: "Hide URL",
@@ -141,6 +144,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
         },
         chatEnabled: "Associa un canale di chat dedicato",
         allowTalking: "Consentire di parlare e formare bolle",
+        raiseHandEnabled: "Consentire di alzare la mano",
         seeAttendees: "Vedi partecipanti",
         start: {
             label: "Area di Partenza",
@@ -303,6 +307,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 startWithAudioMuted: "Avvia con microfono disattivato",
                 startWithVideoMuted: "Avvia con video disattivato",
                 disableChat: "Disabilita chat",
+                raiseHandEnabled: "Consentire di alzare la mano",
                 livekitRoomAdminTag: "Tag moderatore per la sala riunioni",
                 cancel: "Annulla",
                 validate: "Convalida",
@@ -457,7 +462,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 audienceVideoFeedbackActivated: "Modalità auditorium",
                 audienceVideoFeedbackActivatedDisabled: "Modalità auditorium",
                 audienceVideoFeedbackActivatedHelper:
-                    "Modalità auditorium attivata: Ricevi il flusso di camera e microfono di tutti gli utenti (con camera e microfono attivati) nella stanza/mondo. Ma il partecipante non sarà in grado di vedere gli altri partecipanti. Disattivato per impostazione predefinita.",
+                    "Modalità auditorium attivata: Ricevi il flusso della camera di tutti gli utenti (con camera attivata) nella stanza/mondo, senza il loro audio. Ma il partecipante non sarà in grado di vedere gli altri partecipanti. Disattivato per impostazione predefinita.",
                 error: {
                     title: "Per favore inserisci un titolo",
                     save: {

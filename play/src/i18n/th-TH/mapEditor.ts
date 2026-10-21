@@ -87,6 +87,9 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
             defaultButtonLabel: "เล่นเพลง",
             error: "ไม่สามารถโหลดเสียงได้",
             actionButtonLabel: "เล่นเพลง",
+            playForAllUsersLabel: "เล่นให้ผู้ใช้ทุกคนบนแผนที่",
+            audibleRadiusLabel: "รัศมีที่ได้ยิน (พิกเซล)",
+            audibleRadiusPlaceholder: "ได้ยินทุกที่หากเว้นว่าง",
         },
         openWebsite: {
             label: "เปิดลิงก์",
@@ -303,6 +306,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 startWithAudioMuted: "เริ่มโดยปิดไมโครโฟน",
                 startWithVideoMuted: "เริ่มโดยปิดวิดีโอ",
                 disableChat: "ปิดใช้งานแชท",
+                raiseHandEnabled: "อนุญาตให้ยกมือ",
                 livekitRoomAdminTag: "แท็กผู้ควบคุมสำหรับห้องประชุม",
                 cancel: "ยกเลิก",
                 validate: "ตรวจสอบ",
@@ -325,6 +329,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
         advancedOptions: "ตัวเลือกขั้นสูง",
         chatEnabled: "ผูกช่องแชทเฉพาะ",
         allowTalking: "อนุญาตให้พูดคุยและสร้างบับเบิล",
+        raiseHandEnabled: "อนุญาตให้ยกมือ",
         noProperties: "ยังไม่ได้กำหนดคุณสมบัติ",
     },
     areaEditor: {
@@ -452,7 +457,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 audienceVideoFeedbackActivated: "โหมดหอประชุม",
                 audienceVideoFeedbackActivatedDisabled: "โหมดหอประชุม",
                 audienceVideoFeedbackActivatedHelper:
-                    "เปิดโหมดหอประชุม: รับสตรีมกล้องและไมโครโฟนของผู้ใช้ทุกคน (ที่เปิดกล้องและไมโครโฟน) ในห้อง/โลก แต่ผู้เข้าร่วมจะไม่เห็นผู้เข้าร่วมคนอื่น ปิดเป็นค่าเริ่มต้น",
+                    "เปิดโหมดหอประชุม: รับสตรีมกล้องของผู้ใช้ทุกคน (ที่เปิดกล้อง) ในห้อง/โลก โดยไม่มีเสียง แต่ผู้เข้าร่วมจะไม่เห็นผู้เข้าร่วมคนอื่น ปิดเป็นค่าเริ่มต้น",
                 error: {
                     title: "กรุณากรอกชื่อ",
                     save: {

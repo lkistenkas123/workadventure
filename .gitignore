@@ -1,4 +1,7 @@
 .env
+/auth/
+/contrib/docker/.env.dev
+/dev/local.env
 .idea
 .vagrant
 Vagrantfile

@@ -18,28 +18,15 @@
     import Button from "../UI/Button.svelte";
     import { IconApps, IconAppWindow, IconHistory } from "@wa-icons";
 
-    let logo = $state(logoImg);
-    let sceneBg = $state(bgMap);
+    const logo = gameManager.currentStartedRoom.loginSceneLogo ?? logoImg;
+    const sceneBg = gameManager.currentStartedRoom.backgroundSceneImage ?? bgMap;
 
     let neverShowAgain = $state(false);
     let unsubscribePwa: (() => void) | undefined;
 
     onMount(() => {
         unsubscribePwa = initPwaInstallUiListeners();
-        analyticsClient.pwaInstallPromptShown(detectIos());
-
-        gameManager.currentStartedRoomPromise
-            .then((room) => {
-                if (room.loginSceneLogo) {
-                    logo = room.loginSceneLogo;
-                }
-                if (room.backgroundSceneImage) {
-                    sceneBg = room.backgroundSceneImage;
-                }
-            })
-            .catch((e) => {
-                console.error("Error while loading current room for PWA install screen", e);
-            });
+        analyticsClient.trackAdminEvent("pwa.install_prompt_shown", { isIos: detectIos() });
     });
 
     onDestroy(() => {
@@ -209,7 +196,7 @@
                         type="button"
                         class="!bg-white/10 !text-lg !text-white hover:!bg-white/20"
                         onclick={() => {
-                            analyticsClient.pwaContinueInBrowserClick();
+                            analyticsClient.trackAdminEvent("pwa.continue_in_browser_clicked");
                             handleContinue();
                         }}
                         dataTestId="pwa-install-skip"

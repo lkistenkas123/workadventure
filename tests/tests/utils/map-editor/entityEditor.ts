@@ -2,6 +2,7 @@ import { fileURLToPath } from "url";
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import { gameToBrowserCanvasCoordinates } from "../gameCoordinates";
+import Map from "../map";
 
 class EntityEditor {
     async selectEntity(page: Page, nb: number, search?: string) {
@@ -52,8 +53,19 @@ class EntityEditor {
     }
 
     async moveAndClick(page: Page, x: number, y: number) {
-        await this.wait2Frames(page);
         const coordinates = { x, y };
+        // Opening the map editor resizes the game, and the camera follows: wait for the target to stop moving on the
+        // canvas, or the click lands where it was a few frames ago.
+        let lastPosition = "";
+        await expect
+            .poll(async () => {
+                await this.wait2Frames(page);
+                const position = JSON.stringify(await gameToBrowserCanvasCoordinates(page, coordinates));
+                const stable = position === lastPosition;
+                lastPosition = position;
+                return stable;
+            })
+            .toBe(true);
         const browserCoordinates = await gameToBrowserCanvasCoordinates(page, coordinates);
         await page.locator("#game canvas").click({
             position: browserCoordinates,
@@ -62,15 +74,17 @@ class EntityEditor {
         await this.wait2Frames(page);
     }
 
-    async moveAndRightClick(page: Page, x: number, y: number) {
-        await this.wait2Frames(page);
-        const coordinates = { x, y };
-        const browserCoordinates = await gameToBrowserCanvasCoordinates(page, coordinates);
-        await page.locator("#game canvas").click({
-            position: browserCoordinates,
-            button: "right",
-        });
-
+    /**
+     * Walks the avatar to (x, y), approaching it from straight above so that it ends up facing down.
+     *
+     * Entity activation is directional: ActivatablesManager tests a point shifted 24px towards the
+     * direction the avatar faces, so an avatar standing right next to an entity but facing sideways
+     * never triggers it. A single pathfinding move ends facing whichever way its last leg went, and
+     * that depends on where the avatar spawned, hence the teleport straight above the target first.
+     */
+    async walkToFacingDown(page: Page, x: number, y: number) {
+        await Map.teleportToPosition(page, x, y - 2 * 32);
+        await Map.walkToPosition(page, x, y);
         await this.wait2Frames(page);
     }
 

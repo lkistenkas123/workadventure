@@ -87,6 +87,9 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
             defaultButtonLabel: "Reproducir música",
             error: "No se pudo cargar el sonido",
             actionButtonLabel: "Reproducir música",
+            playForAllUsersLabel: "Reproducir para todos los usuarios del mapa",
+            audibleRadiusLabel: "Radio audible (en píxeles)",
+            audibleRadiusPlaceholder: "Audible en todas partes si está vacío",
         },
         openWebsite: {
             label: "Abrir enlace",
@@ -307,6 +310,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 startWithAudioMuted: "Iniciar con el micrófono silenciado",
                 startWithVideoMuted: "Iniciar con el vídeo cerrado",
                 disableChat: "Desactivar el chat",
+                raiseHandEnabled: "Permitir levantar la mano",
                 livekitRoomAdminTag: "Etiqueta de moderador de la sala de reuniones",
                 cancel: "Cancelar",
                 validate: "Validar",
@@ -316,6 +320,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
         advancedOptions: "Opciones avanzadas",
         chatEnabled: "Asociar un canal de chat dedicado",
         allowTalking: "Permitir hablar y formar burbujas",
+        raiseHandEnabled: "Permitir levantar la mano",
         maxUsersInAreaPropertyData: {
             label: "Número máximo de usuarios",
             description: "Establecer el número máximo de usuarios en la zona.",
@@ -458,7 +463,7 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
                 audienceVideoFeedbackActivated: "Modo auditorio",
                 audienceVideoFeedbackActivatedDisabled: "Modo auditorio",
                 audienceVideoFeedbackActivatedHelper:
-                    "Modo auditorio activado: recibe el flujo de cámara y micrófono de todos los usuarios (con cámara y micrófono activados) en la sala o el mundo. Pero el asistente no podrá ver a los demás asistentes. Desactivado por defecto.",
+                    "Modo auditorio activado: recibe el flujo de cámara de todos los usuarios (con cámara activada) en la sala o el mundo, sin su audio. Pero el asistente no podrá ver a los demás asistentes. Desactivado por defecto.",
                 error: {
                     title: "Introduzca un título",
                     save: {
