@@ -55,6 +55,26 @@ export const EnvironmentVariables = z.object({
         .describe(
             "Maximum time, in milliseconds, the client keeps sent websocket messages for replay after a short disconnection. Defaults to 30000.",
         ),
+    PRESENCE_NOTIFICATION_URL: z
+        .string()
+        .url()
+        .optional()
+        .transform(emptyStringToUndefined)
+        .describe("Internal webhook called when a user enters the configured office room."),
+    PRESENCE_NOTIFICATION_SECRET: z
+        .string()
+        .optional()
+        .transform(emptyStringToUndefined)
+        .describe("Bearer token used to authenticate the presence notification webhook."),
+    PRESENCE_NOTIFICATION_ROOM_URL: z
+        .string()
+        .url()
+        .optional()
+        .transform(emptyStringToUndefined)
+        .describe("Exact room URL for which presence notifications are sent."),
+    PRESENCE_NOTIFICATION_COOLDOWN_SECONDS: PositiveIntAsString.optional()
+        .transform((val) => toNumber(val, 300))
+        .describe("Minimum time before a reconnect by the same user can trigger another email. Defaults to 300."),
     PUSHER_ADMIN_WS_MAX_BACKPRESSURE_BYTES: PositiveIntAsString.optional()
         .transform((val) => toNumber(val, 1024 * 1024))
         .describe(

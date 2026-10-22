@@ -233,6 +233,9 @@ vervang daarna de drie digests in het Compose-bestand en voer opnieuw
   Matrix-variabelen gevuld zijn.
 - De lokale auth-server ondersteunt `/logout` en schrijft de magic link naar
   de logs wanneer Resend niet geconfigureerd is.
+- Aanwezigheidsmails lopen via een beveiligde interne webhook naar TeoAuth.
+  Zonder Resend wordt lokaal alleen een veilige mailpreview in de auth-logs
+  geschreven; dubbele tabbladen en korte reconnects worden onderdrukt.
 - De productie-`.env`, productiecredentials en productie-auth-database zijn
   niet gekopieerd.
 

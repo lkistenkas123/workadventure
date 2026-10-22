@@ -23,6 +23,10 @@ Environment variables for the Play service (frontend and pusher).
 | `PUSHER_WS_PORT` | No | WebSocket port for the pusher service. Defaults to 3001 |
 | `SOCKET_IDLE_TIMER` | No | maximum time (in second) without activity before a socket is closed. Should be greater than 60 seconds in order to cope for Chrome intensive throttling (https://developer.chrome.com/blog/timer-throttling-in-chrome-88/#intensive-throttling) |
 | `CLIENT_DISCONNECTION_RETENTION_MS` | No | Maximum time, in milliseconds, the client keeps sent websocket messages for replay after a short disconnection. Defaults to 30000. |
+| `PRESENCE_NOTIFICATION_URL` | No | Internal webhook called when a user enters the configured office room. |
+| `PRESENCE_NOTIFICATION_SECRET` | No | Bearer token used to authenticate the presence notification webhook. |
+| `PRESENCE_NOTIFICATION_ROOM_URL` | No | Exact room URL for which presence notifications are sent. |
+| `PRESENCE_NOTIFICATION_COOLDOWN_SECONDS` | No | Minimum time before a reconnect by the same user can trigger another email. Defaults to 300. |
 | `PUSHER_ADMIN_WS_MAX_BACKPRESSURE_BYTES` | No | Maximum uWebSockets backpressure bytes accepted on admin websocket connections. Defaults to 1048576. |
 | `ALLOWED_CORS_ORIGIN` | No | Allowed CORS origin for API requests. Use '*' to allow any domain |
 | `PUSHER_URL` | No | Public URL of the pusher service |
