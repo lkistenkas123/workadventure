@@ -56,6 +56,28 @@ export class PusherRoom {
         socket.getUserData().pusherRoom = undefined;
     }
 
+    public countPresentConnections(userUuid: string): number {
+        let count = 0;
+        for (const listener of this.listeners) {
+            const user = listener.getUserData();
+            if (user.joinedRoom && user.userId !== undefined && user.userUuid === userUuid) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public getPresentUsers(): { uuid: string; name: string }[] {
+        const users = new Map<string, { uuid: string; name: string }>();
+        for (const listener of this.listeners) {
+            const user = listener.getUserData();
+            if (user.joinedRoom && user.userId !== undefined && !users.has(user.userUuid)) {
+                users.set(user.userUuid, { uuid: user.userUuid, name: user.name });
+            }
+        }
+        return Array.from(users.values());
+    }
+
     /**
      * A socket is a member of the room from join() until leave(). Zones only appear once the socket sends its
      * first viewport, one back round-trip after joining, so counting zones alone would report the room as empty

@@ -82,6 +82,7 @@ import RecordingService from "./RecordingService";
 import type { PusherWebSocket } from "./PusherWebSocket";
 import { analyticsTimedEventTracker, CONNECTION_SESSION_HANDLE } from "./AnalyticsTimedEventTracker";
 import { isFrameable } from "./EmbeddableHeaders";
+import { presenceNotificationService } from "./PresenceNotificationService";
 
 const debug = Debug("socket");
 
@@ -285,6 +286,17 @@ export class SocketManager implements ZoneEventListener {
                                 { connectionId: socketData.tabId },
                                 socketData,
                             );
+                            if (socketData.pusherRoom) {
+                                presenceNotificationService
+                                    .notifyUserJoined(socketData.pusherRoom, {
+                                        uuid: socketData.userUuid,
+                                        name: socketData.name,
+                                    })
+                                    .catch((error: unknown) => {
+                                        console.error("Unexpected presence notification failure", error);
+                                        Sentry.captureException(error);
+                                    });
+                            }
                             break;
                         }
                         case "refreshRoomMessage": {
