@@ -71,7 +71,7 @@ export const EnvironmentVariables = z.object({
         .url()
         .optional()
         .transform(emptyStringToUndefined)
-        .describe("Exact room URL for which presence notifications are sent."),
+        .describe("Exact public room URL used by the pusher for presence notifications (not the raw map-storage URL)."),
     PRESENCE_NOTIFICATION_COOLDOWN_SECONDS: PositiveIntAsString.optional()
         .transform((val) => toNumber(val, 300))
         .describe("Minimum time before a reconnect by the same user can trigger another email. Defaults to 300."),
