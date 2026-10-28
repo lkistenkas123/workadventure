@@ -13,7 +13,7 @@ import { PresenceNotificationService } from "./PresenceNotificationService";
 const config = {
     url: "http://teo-auth:3000/internal/presence-notification",
     secret: "test-secret",
-    roomUrl: "https://teo.docker/map-storage/office/the-everywhere-office.wam",
+    roomUrl: "https://teo.docker/~/office/the-everywhere-office.wam",
     cooldownSeconds: 300,
 };
 
